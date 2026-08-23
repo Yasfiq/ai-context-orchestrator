@@ -1,0 +1,180 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 15% 8%;
+    --foreground: 215 25% 90%;
+    --card: 210 10% 11%;
+    --card-foreground: 215 25% 90%;
+    --primary: 243 75% 50%;
+    --primary-foreground: 215 25% 90%;
+    --muted: 210 10% 13%;
+    --muted-foreground: 215 16% 62%;
+    --border: 207 12% 21%;
+    --input: 210 10% 13%;
+    --ring: 243 75% 50%;
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    color-scheme: dark;
+    background: #121619;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    min-height: 100dvh;
+    background-image:
+      linear-gradient(rgba(226, 232, 240, 0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(226, 232, 240, 0.018) 1px, transparent 1px),
+      radial-gradient(circle at 78% -10%, rgba(67, 56, 202, 0.16), transparent 34rem);
+    background-size: 32px 32px, 32px 32px, auto;
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    background: rgba(67, 56, 202, 0.55);
+    color: #ffffff;
+  }
+
+  :focus-visible {
+    outline: 2px solid #818cf8;
+    outline-offset: 3px;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #3b444c;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #596570;
+  }
+}
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@layer components {
+  .workspace-frame {
+    min-height: 100dvh;
+    background: rgba(18, 22, 25, 0.78);
+    backdrop-filter: blur(16px);
+  }
+
+  .eyebrow {
+    @apply font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground;
+  }
+
+  .hairline-title {
+    @apply flex items-center gap-3 text-sm font-semibold text-foreground;
+  }
+
+  .hairline-title::before {
+    content: "";
+    @apply h-px w-6 bg-primary;
+  }
+
+  .mermaid-shell {
+    @apply my-8 overflow-hidden border-y border-border bg-surface/70;
+  }
+
+  .mermaid-canvas {
+    @apply overflow-x-auto p-4;
+  }
+
+  .mermaid-canvas svg {
+    display: block;
+    width: auto;
+    min-width: min-content;
+    max-width: none;
+    height: auto;
+    margin: 0 auto;
+  }
+
+  .mermaid-status,
+  .mermaid-error {
+    @apply px-4 py-10 text-center font-mono text-xs text-muted-foreground;
+  }
+
+  .mermaid-error {
+    @apply text-amber-300;
+  }
+
+  .mermaid-actions {
+    @apply flex items-center justify-between gap-3 border-t border-border px-4 py-2.5;
+  }
+
+  .mermaid-actions button {
+    @apply min-h-9 px-2 font-mono text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none;
+  }
+
+  .mermaid-source {
+    @apply m-0 max-h-64 overflow-auto border-t border-border bg-background/80 p-4 text-xs text-foreground;
+  }
+
+  @media (max-width: 640px) {
+    .mermaid-canvas {
+      @apply p-3;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media print {
+  html,
+  body {
+    color-scheme: light;
+    background: #ffffff !important;
+    color: #172026 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 2px solid CanvasText;
+  }
+
+  .workspace-frame {
+    background: Canvas;
+  }
+}
