@@ -1,0 +1,206 @@
+name: AI Code Review
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    name: Review pull request with 9Router
+    if: >-
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      contains(fromJSON('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    outputs:
+      review_body: ${{ steps.result.outputs.review_body }}
+
+    steps:
+      - name: Checkout trusted review configuration
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: trusted
+          persist-credentials: false
+          sparse-checkout: |
+            AGENTS.md
+            .github/ai-review/review.md
+          sparse-checkout-cone-mode: false
+
+      - name: Checkout pull request source
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          path: source
+          persist-credentials: false
+
+      - name: Validate review configuration
+        env:
+          NINEROUTER_KEY: ${{ secrets.NINEROUTER_KEY }}
+          NINEROUTER_MODEL: ${{ vars.NINEROUTER_MODEL }}
+          NINEROUTER_URL: ${{ vars.NINEROUTER_URL }}
+        run: |
+          test -n "$NINEROUTER_KEY" || {
+            echo "Repository secret NINEROUTER_KEY is not configured."
+            exit 1
+          }
+          test -n "$NINEROUTER_MODEL" || {
+            echo "Repository variable NINEROUTER_MODEL is not configured."
+            exit 1
+          }
+          case "$NINEROUTER_URL" in
+            https://*) ;;
+            *)
+              echo "NINEROUTER_URL must use HTTPS."
+              exit 1
+              ;;
+          esac
+
+      - name: Prepare pull request diff
+        working-directory: source
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          git diff \
+            --find-renames \
+            --no-ext-diff \
+            --unified=80 \
+            "$BASE_SHA...$HEAD_SHA" \
+            > ../pull-request.diff
+
+      - name: Prepare review request
+        env:
+          NINEROUTER_MODEL: ${{ vars.NINEROUTER_MODEL }}
+        run: |
+          jq -n \
+            --arg model "$NINEROUTER_MODEL" \
+            --rawfile instructions trusted/.github/ai-review/review.md \
+            --rawfile governance trusted/AGENTS.md \
+            --rawfile diff pull-request.diff \
+            '{
+              model: $model,
+              stream: false,
+              messages: [
+                {
+                  role: "system",
+                  content: $instructions
+                },
+                {
+                  role: "user",
+                  content: (
+                    "Repository governance:\n\n" +
+                    $governance +
+                    "\n\nPull request diff:\n\n" +
+                    $diff
+                  )
+                }
+              ]
+            }' > request.json
+
+      - name: Request review from 9Router
+        env:
+          NINEROUTER_KEY: ${{ secrets.NINEROUTER_KEY }}
+          NINEROUTER_URL: ${{ vars.NINEROUTER_URL }}
+        run: |
+          endpoint="${NINEROUTER_URL%/}/v1/chat/completions"
+
+          curl \
+            --fail-with-body \
+            --silent \
+            --show-error \
+            --retry 2 \
+            --retry-all-errors \
+            --connect-timeout 15 \
+            --max-time 600 \
+            --request POST \
+            "$endpoint" \
+            --header "Authorization: Bearer $NINEROUTER_KEY" \
+            --header "Content-Type: application/json" \
+            --data @request.json \
+            --output response.json
+
+          jq --exit-status --raw-output \
+            '.choices[0].message.content |
+              select(type == "string" and length > 0)' \
+            response.json \
+            > review.md
+
+      - name: Export review result
+        id: result
+        run: |
+          delimiter="REVIEW_$(date +%s)_${RANDOM}"
+          {
+            echo "review_body<<$delimiter"
+            cat review.md
+            echo "$delimiter"
+          } >> "$GITHUB_OUTPUT"
+
+  publish:
+    name: Publish review
+    needs: review
+    if: >-
+      needs.review.result == 'success' &&
+      needs.review.outputs.review_body != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Create or update review comment
+        uses: actions/github-script@v7
+        env:
+          REVIEW_BODY: ${{ needs.review.outputs.review_body }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const marker = '<!-- ai-context-orchestrator-9router-review -->';
+            const body = `${marker}\n## 9Router AI Code Review\n\n${process.env.REVIEW_BODY}`;
+            const issue_number = context.payload.pull_request.number;
+
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number,
+                per_page: 100,
+              },
+            );
+
+            const previous = comments.find(
+              (comment) =>
+                comment.user?.login === 'github-actions[bot]' &&
+                comment.body?.startsWith(marker),
+            );
+
+            if (previous) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: previous.id,
+                body,
+              });
+              return;
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number,
+              body,
+            });

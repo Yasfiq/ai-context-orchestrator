@@ -59,10 +59,12 @@ npm run verify
 1. Buka Draft PR sejak awal agar scope terlihat.
 2. Isi bagian perubahan, cara verifikasi, dan risiko.
 3. Tunggu CI lulus.
-4. Jalankan `@codex review` dan evaluasi setiap finding berdasarkan bukti.
+4. Ubah PR menjadi Ready for Review agar workflow `AI Code Review` berjalan, lalu evaluasi setiap finding berdasarkan bukti.
 5. Minta human review untuk perubahan berisiko tinggi jika tersedia.
 6. Selesaikan seluruh conversation sebelum merge.
 7. Gunakan squash merge dan hapus feature branch.
+
+Workflow memerlukan repository secret `NINEROUTER_KEY` serta repository variables `NINEROUTER_URL` dan `NINEROUTER_MODEL`. Jangan menyimpan nilai tersebut di source code atau menuliskannya pada Pull Request.
 
 AI review merupakan lapisan tambahan. Test, CI, branch protection, dan penilaian manusia tetap menjadi sumber keputusan merge.
 
