@@ -23,14 +23,6 @@ Sebutkan state, route, atau perilaku lama yang paling mungkin terkena regression
 
 ## Review AI
 
-Setelah PR siap, jalankan:
+Workflow `AI Code Review` melalui 9Router berjalan otomatis ketika PR tidak lagi berstatus Draft. Pastikan komentar review terbaru sudah dievaluasi sebelum merge.
 
-```text
-@codex review
-```
-
-Untuk perubahan pada autentikasi, kredensial, sanitization, atau Route Handlers:
-
-```text
-@codex security review
-```
+Jika workflow tidak berjalan, periksa repository secret `NINEROUTER_KEY` serta repository variables `NINEROUTER_URL` dan `NINEROUTER_MODEL` pada pengaturan GitHub Actions.
