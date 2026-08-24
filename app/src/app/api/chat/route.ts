@@ -21,7 +21,7 @@ import type {
 } from "@/types/schema";
 import { chatModelName, universalLLM } from "@/lib/llm-provider";
 
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   const startedAt = Date.now();
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
         content: message.content,
       }));
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15_000);
+    const timeoutId = setTimeout(() => controller.abort(), 50_000);
 
     try {
       const result = streamText({
