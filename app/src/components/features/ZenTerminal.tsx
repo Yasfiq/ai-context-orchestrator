@@ -100,7 +100,7 @@ export function ZenTerminal() {
 
     setIsLoading(true);
     const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 17_000);
+    const timeoutId = window.setTimeout(() => controller.abort(), 55_000);
 
     try {
       // Use messages directly from store (userMessage is already appended by addMessage)
