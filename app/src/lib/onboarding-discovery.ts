@@ -8,6 +8,7 @@ import type {
   SuggestedReply,
 } from "@/types/schema";
 import { MUST_HAVE_KEYS, normalizeMustHaveKey } from "@/types/schema";
+import { MUST_HAVE_UI_LABELS } from "./ui-copy";
 
 export function normalizeDiscoveryState(
   value: unknown,
@@ -138,8 +139,11 @@ function focusedQuestion(
       ? "Aplikasi ini terutama akan digunakan sebagai web, mobile, atau desktop?"
       : "Will this primarily be a web, mobile, or desktop application?";
   }
+  // Map internal key to user-friendly label
+  const friendlyLabel = MUST_HAVE_UI_LABELS[activeVariable] || activeVariable;
+  
   return isId
-    ? `Mari fokus pada satu hal dulu: ${missingDimension}. Keputusan seperti apa yang paling sesuai dengan kebutuhan Anda?`
+    ? `Mari fokus pada satu hal dulu: ${friendlyLabel}. Keputusan seperti apa yang paling sesuai dengan kebutuhan Anda?`
     : `Let us focus on one thing first: ${missingDimension}. What decision best fits your needs?`;
 }
 
