@@ -77,3 +77,14 @@ Dokumen ini memuat peta jalan implementasi (Implementation Plan) yang dipecah me
 *   **Langkah 3:** Gunakan pull request template, branch protection, squash merge, dan automatic Codex review.
 *   **Langkah 4:** Simpan aturan repository-specific review pada root `AGENTS.md`.
 *   **Kriteria Selesai:** Direct push ke `main` dibatasi, CI menjadi required check, dan PR menerima review sebelum merge.
+
+---
+
+### FASE 8: Mesin "Anti-Slop" Premium (Backend)
+**Tujuan:** Memoles kualitas output dokumen agar setara dengan standar SaaS berbayar dengan memotong basa-basi, menghapus jargon AI klise, dan memastikan dokumen sangat teknis dan padat.
+*   **Langkah 1:** Definisikan persona `@anti-slop-editor` dan guardrail anti-slop pada `AGENTS.md` dan `app/src/prompts/anti-slop-prompt.ts`.
+*   **Langkah 2:** Buat modul pembersih deterministik sintaks-aman di `app/src/lib/anti-slop.ts` yang memuat kamus klise bilingual (EN & ID), proteksi penuh blok ```mermaid``` dan blok kode, serta kalkulator metrik `calculateSlopScore`.
+*   **Langkah 3:** Integrasikan direktif anti-slop upstream ke `BASE_INSTRUCTION` pada `app/src/prompts/cop-pipeline.ts` dan prompt revisi `/api/tweak`.
+*   **Langkah 4:** Sambungkan sanitasi anti-slop di ujung pipeline `/api/generate/route.ts`, `/api/generate/single/route.ts`, dan `/api/tweak/route.ts`.
+*   **Langkah 5:** Buat automated test suite `app/src/__tests__/anti-slop.test.ts` untuk memverifikasi eliminasi slop, proteksi Mermaid, dan zero regression.
+*   **Kriteria Selesai:** Seluruh dokumen hasil CoP dan tweak bersih dari klise AI (*delve, seamless, revolutionize, merevolusi, dll*), diagram Mermaid tetap valid, dan 100% test suite lulus.

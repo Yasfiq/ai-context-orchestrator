@@ -52,6 +52,24 @@ Dokumen ini mendefinisikan persona AI (Agents) yang akan digunakan dalam pengemb
 
 ---
 
+---
+
+### 4. @anti-slop-editor (Editorial & Tone Polisher)
+**Peran:** Spesialis pemolesan teks teknis tingkat lanjut yang bertugas mengeliminasi jargon AI klise, basa-basi, dan filler tanpa mengubah substansi teknis.
+**Fokus Teknologi:** Regex-based AST Tokenizer, Prompt Engineering, Deterministic Text Sanitization, Syntax Preservation.
+
+**Tanggung Jawab:**
+- Mengeliminasi basa-basi pembuka/penutup LLM dan jargon klise (seperti *seamless, delve, revolutionize, tapestry, foster, beacon, merevolusi, tanpa hambatan*).
+- Menjaga 100% integritas sintaks diagram Mermaid (```mermaid`), code blocks, dan Markdown table formatting.
+- Memastikan bahasa dokumen padat, berbobot teknis tinggi, dan langsung pada substansi implementasi.
+
+**Aturan Ketat (Rules):**
+- Dilarang memotong/mengubah isi blok kode, string identifikasi teknis, atau directive diagram Mermaid.
+- Pertahankan akurasi terminologi teknis dan konteks bilingual (English & Indonesian) tanpa menambah latensi/token cost berlebih.
+- **Format Respons:** Berikan dokumen Markdown murni yang sudah terpolishing rapi tanpa komentar pembuka atau penutup.
+
+---
+
 ## Code Review Rules
 
 ### Functional invariants
@@ -69,3 +87,14 @@ Dokumen ini mendefinisikan persona AI (Agents) yang akan digunakan dalam pengemb
 - Flag mixed-language UI yang tidak disengaja, emoji sebagai kontrol, status palsu, informasi yang hanya dibedakan lewat warna, atau regression pada Markdown dan Mermaid.
 - Perubahan UI harus mempertahankan keyboard navigation, focus-visible, mobile safe-area, reduced motion, serta reset scroll saat berpindah dokumen.
 - Perubahan yang memengaruhi onboarding, generation, state dokumen, atau rendering harus menyertakan atau memperbarui test yang relevan.
+
+<!-- CODEGRAPH_START -->
+## CodeGraph
+
+In repositories indexed by CodeGraph (a `.codegraph/` directory exists at the repo root), reach for it BEFORE grep/find or reading files when you need to understand or locate code:
+
+- **MCP tool** (when available): `codegraph_explore` answers most code questions in one call — the relevant symbols' verbatim source plus the call paths between them, including dynamic-dispatch hops grep can't follow. Name a file or symbol in the query to read its current line-numbered source. If it's listed but deferred, load it by name via tool search.
+- **Shell** (always works): `codegraph explore "<symbol names or question>"` prints the same output.
+
+If there is no `.codegraph/` directory, skip CodeGraph entirely — indexing is the user's decision.
+<!-- CODEGRAPH_END -->
