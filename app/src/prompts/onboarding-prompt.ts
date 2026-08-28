@@ -34,10 +34,10 @@ export function buildOnboardingSystemPrompt(
       `- ${key}: ${currentMustHaves[key] || "NOT CONFIRMED"}`
   ).join("\n");
   const draftSummary = discovery
-    ? MUST_HAVE_KEYS.filter((key) => discovery[key].draftValue)
+    ? MUST_HAVE_KEYS.filter((key) => discovery[key]?.draftValue)
         .map(
           (key) =>
-            `- ${key}: ${discovery[key].draftValue} [${discovery[key].status}${discovery[key].needsReview ? ", needs review" : ""}]`
+            `- ${key}: ${discovery[key]!.draftValue} [${discovery[key]!.status}${discovery[key]!.needsReview ? ", needs review" : ""}]`
         )
         .join("\n")
     : "None";

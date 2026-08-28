@@ -28,13 +28,13 @@ describe("Schema constants", () => {
     }
   });
 
-  it("should have exactly 7 documents in CoP generation order", () => {
-    expect(COP_GENERATION_ORDER).toHaveLength(7);
+  it("should have exactly 3 documents in CoP generation order", () => {
+    expect(COP_GENERATION_ORDER).toHaveLength(3);
   });
 
-  it("should start CoP with PRD and end with IMPLEMENTATION_PLAN", () => {
+  it("should start CoP with PRD and end with AGENTS", () => {
     expect(COP_GENERATION_ORDER[0]).toBe("PRD");
-    expect(COP_GENERATION_ORDER[6]).toBe("IMPLEMENTATION_PLAN");
+    expect(COP_GENERATION_ORDER[2]).toBe("AGENTS");
   });
 
   it("should have filenames for all documents", () => {
@@ -55,10 +55,6 @@ describe("Schema constants", () => {
       "PRD",
       "ARCHITECTURE",
       "AGENTS",
-      "RULES",
-      "WORKFLOW",
-      "SKILLS_MATRIX",
-      "IMPLEMENTATION_PLAN",
     ]);
   });
 });

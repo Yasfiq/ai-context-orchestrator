@@ -57,16 +57,16 @@ describe("GenerationProgress", () => {
     );
 
     await waitFor(() => {
-      expect(useAppStore.getState().documents).toHaveLength(7);
+      expect(useAppStore.getState().documents).toHaveLength(3);
     });
 
-    expect(fetchMock).toHaveBeenCalledTimes(7);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
     expect(screen.queryByText("Generation Error")).toBeNull();
     expect(
       COP_GENERATION_ORDER.map(
         (name) => useAppStore.getState().documentProgress[name]
       )
-    ).toEqual(Array(7).fill("completed"));
+    ).toEqual(Array(3).fill("completed"));
     expect(
       fetchMock.mock.calls.map((call) => {
         const options = call[1] as RequestInit;

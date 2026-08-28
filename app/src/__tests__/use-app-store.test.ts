@@ -253,8 +253,8 @@ describe("useAppStore", () => {
         generatedAt: Date.now(),
       },
       {
-        name: "IMPLEMENTATION_PLAN",
-        filename: "IMPLEMENTATION_PLAN.md",
+        name: "AGENTS",
+        filename: "AGENTS.md",
         content: "Plan",
         generatedAt: Date.now(),
       },
@@ -263,7 +263,7 @@ describe("useAppStore", () => {
     store.updateDocument("PRD", "New PRD");
 
     expect(useAppStore.getState().documentProgress.ARCHITECTURE).toBe("stale");
-    expect(useAppStore.getState().documentProgress.IMPLEMENTATION_PLAN).toBe(
+    expect(useAppStore.getState().documentProgress.AGENTS).toBe(
       "stale"
     );
   });
