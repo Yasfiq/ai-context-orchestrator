@@ -70,8 +70,8 @@ describe("export utilities", () => {
 
     it("should handle empty content gracefully", () => {
       const doc: GeneratedDocument = {
-        name: "RULES",
-        filename: "RULES.md",
+        name: "AGENTS",
+        filename: "AGENTS.md",
         content: "",
         generatedAt: Date.now(),
       };

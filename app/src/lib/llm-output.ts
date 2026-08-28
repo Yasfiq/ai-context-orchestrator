@@ -1,3 +1,4 @@
+import { cleanAntiSlop } from "@/lib/anti-slop";
 import { normalizeMermaidMarkdown } from "@/lib/mermaid-markdown";
 
 const REASONING_PREFIXES = [
@@ -28,6 +29,8 @@ export function cleanModelOutput(text: string): string {
       ""
     )
     .trim();
+
+  cleaned = cleanAntiSlop(cleaned);
 
   return cleaned;
 }

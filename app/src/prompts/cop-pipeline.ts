@@ -1,3 +1,4 @@
+import { ANTI_SLOP_DIRECTIVES } from "@/prompts/anti-slop-prompt";
 import type { MustHavesState, DocumentName } from "@/types/schema";
 import { MUST_HAVE_LABELS, MUST_HAVE_KEYS } from "@/types/schema";
 
@@ -16,6 +17,8 @@ function formatMustHavesContext(mustHaves: MustHavesState): string {
  */
 const BASE_INSTRUCTION = `
 ## OUTPUT RULES
+${ANTI_SLOP_DIRECTIVES}
+
 - Write in clean, professional Markdown.
 - Be comprehensive but concise — no filler content.
 - Use proper Markdown headings (##, ###), bullet points, and code blocks where appropriate.
@@ -56,14 +59,6 @@ export function buildCopPrompt(
       return buildArchitecturePrompt(context, previousDocuments);
     case "AGENTS":
       return buildAgentsPrompt(context, previousDocuments);
-    case "RULES":
-      return buildRulesPrompt(context, previousDocuments);
-    case "WORKFLOW":
-      return buildWorkflowPrompt(context, previousDocuments);
-    case "SKILLS_MATRIX":
-      return buildSkillsMatrixPrompt(context, previousDocuments);
-    case "IMPLEMENTATION_PLAN":
-      return buildImplementationPlanPrompt(context, previousDocuments);
     default:
       throw new Error(`Unknown document type: ${documentName}`);
   }

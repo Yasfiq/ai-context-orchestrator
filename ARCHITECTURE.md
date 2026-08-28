@@ -27,8 +27,9 @@ graph TD
     Valid -- No --> UI
     Valid -- Yes -->|4. Trigger Generate| API[Next.js API Route / Serverless]
     API -->|5. Chain of Prompts| LLM[OpenAI-compatible LLM Provider]
-    LLM -->|6. Result Files| API
-    API -->|7. Return MD/PDF| Client
+    LLM -->|6. Raw Documents| AntiSlop[Anti-Slop Engine & Polish Layer]
+    AntiSlop -->|7. Polished Documents| API
+    API -->|8. Return Stream/JSON| Client
 ```
 
 ### 3. Folder Structure & Data Flow

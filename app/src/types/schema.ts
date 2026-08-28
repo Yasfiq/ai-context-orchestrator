@@ -166,21 +166,13 @@ export interface ChatMessage {
 export type DocumentName =
   | "PRD"
   | "ARCHITECTURE"
-  | "AGENTS"
-  | "RULES"
-  | "WORKFLOW"
-  | "SKILLS_MATRIX"
-  | "IMPLEMENTATION_PLAN";
+  | "AGENTS";
 
 /** Document filename mapping */
 export const DOCUMENT_FILENAMES: Record<DocumentName, string> = {
   PRD: "PRD.md",
   ARCHITECTURE: "ARCHITECTURE.md",
   AGENTS: "AGENTS.md",
-  RULES: "RULES.md",
-  WORKFLOW: "WORKFLOW.md",
-  SKILLS_MATRIX: "SKILLS_MATRIX.md",
-  IMPLEMENTATION_PLAN: "IMPLEMENTATION_PLAN.md",
 };
 
 /** Human-readable labels for documents */
@@ -188,10 +180,6 @@ export const DOCUMENT_LABELS: Record<DocumentName, string> = {
   PRD: "Product Requirements Document",
   ARCHITECTURE: "Architecture",
   AGENTS: "AI Agents",
-  RULES: "Rules & Conventions",
-  WORKFLOW: "Workflow",
-  SKILLS_MATRIX: "Skills Matrix",
-  IMPLEMENTATION_PLAN: "Implementation Plan",
 };
 
 /** Generation order for Chain of Prompts */
@@ -199,10 +187,6 @@ export const COP_GENERATION_ORDER: DocumentName[] = [
   "PRD",
   "ARCHITECTURE",
   "AGENTS",
-  "RULES",
-  "WORKFLOW",
-  "SKILLS_MATRIX",
-  "IMPLEMENTATION_PLAN",
 ];
 
 /** A generated document */
@@ -229,10 +213,6 @@ export const DOCUMENT_DEPENDENCIES: Record<DocumentName, DocumentName[]> = {
   PRD: [],
   ARCHITECTURE: ["PRD"],
   AGENTS: ["PRD", "ARCHITECTURE"],
-  RULES: ["PRD", "ARCHITECTURE"],
-  WORKFLOW: ["PRD", "ARCHITECTURE", "RULES"],
-  SKILLS_MATRIX: ["ARCHITECTURE", "AGENTS"],
-  IMPLEMENTATION_PLAN: ["PRD", "ARCHITECTURE", "AGENTS"],
 };
 
 /** Generation progress status */
