@@ -14,6 +14,7 @@ import {
 } from "@/types/schema";
 import { tweakModelName, universalLLM } from "@/lib/llm-provider";
 import { validateModelDocument } from "@/lib/llm-output";
+import { logger, errorFields } from "@/lib/logger";
 
 export const maxDuration = 120;
 
@@ -94,7 +95,7 @@ Provide the complete updated document with the requested changes applied:`;
       previousLength: currentContent.length,
     });
 
-    console.info("[/api/tweak] completed", {
+    logger.info("[/api/tweak] completed", {
       model: tweakModelName,
       documentName,
       finishReason,
@@ -107,10 +108,10 @@ Provide the complete updated document with the requested changes applied:`;
       updatedContent: validated.content,
     });
   } catch (error) {
-    console.error("[/api/tweak] failed", {
+    logger.error("[/api/tweak] failed", {
       model: tweakModelName,
       durationMs: Date.now() - startedAt,
-      error: error instanceof Error ? error.message : "Unknown error",
+      ...errorFields(error),
     });
     return NextResponse.json(
       { error: "Perubahan belum dapat diterapkan. Silakan coba kembali." },

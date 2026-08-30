@@ -16,10 +16,12 @@ import {
 } from "@/lib/onboarding-discovery";
 import type {
   MustHaveKey,
+  MustHavesState,
   OnboardingInputSource,
   SessionLanguage,
 } from "@/types/schema";
 import { chatModelName, universalLLM } from "@/lib/llm-provider";
+import { logger, errorFields } from "@/lib/logger";
 
 export const maxDuration = 60;
 
@@ -77,7 +79,7 @@ export async function POST(request: NextRequest) {
         language,
         inputSource
       );
-      console.info("[/api/chat] deterministic", {
+      logger.info("[/api/chat] deterministic", {
         activeVariable,
         durationMs: Date.now() - startedAt,
       });
@@ -144,17 +146,17 @@ export async function POST(request: NextRequest) {
       for (const [rawKey, value] of Object.entries(
         response.confirmedUpdates
       )) {
-        const key = rawKey as keyof typeof mustHaves;
+        const key = rawKey as MustHaveKey;
         if (
           key !== activeVariable &&
           !(correctionRequested && Boolean(mustHaves[key]))
         ) {
-          response.provisionalUpdates[key] = value;
-          delete response.confirmedUpdates[key];
+          (response.provisionalUpdates as Partial<MustHavesState>)[key] = value;
+          delete (response.confirmedUpdates as Partial<MustHavesState>)[key];
         }
       }
 
-      console.info("[/api/chat] completed", {
+      logger.info("[/api/chat] completed", {
         model: chatModelName,
         activeVariable,
         finishReason,
@@ -167,14 +169,13 @@ export async function POST(request: NextRequest) {
       clearTimeout(timeoutId);
     }
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Unknown error";
-    console.error("[/api/chat] failed", {
+    logger.error("[/api/chat] failed", {
       model: chatModelName,
       durationMs: Date.now() - startedAt,
-      error: errorMessage,
+      ...errorFields(error),
     });
 
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
     const isTimeout =
       errorMessage.includes("aborted") ||
       errorMessage.includes("timeout") ||

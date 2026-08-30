@@ -6,6 +6,7 @@ import type { DocumentName } from "@/types/schema";
 import { COP_GENERATION_ORDER, MUST_HAVE_KEYS } from "@/types/schema";
 import { documentModelName, universalLLM } from "@/lib/llm-provider";
 import { validateModelDocument } from "@/lib/llm-output";
+import { logger, errorFields } from "@/lib/logger";
 
 export const maxDuration = 300;
 
@@ -85,10 +86,10 @@ export async function POST(request: NextRequest) {
               })}\n\n`
             );
           } catch (docError) {
-            console.error(
-              `[/api/generate] Error generating ${docName}:`,
-              docError
-            );
+            logger.error("[/api/generate] document generation failed", {
+              document: docName,
+              ...errorFields(docError),
+            });
 
             enqueue(
               `data: ${JSON.stringify({
@@ -119,7 +120,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("[/api/generate] Error:", error);
+    logger.error("[/api/generate] request failed", errorFields(error));
     return new Response(
       JSON.stringify({
         error: "Penyusunan dokumen belum dapat dimulai. Silakan coba kembali.",
