@@ -9,15 +9,14 @@ import { ProgressTracker } from "./ProgressTracker";
 import { OnboardingReview } from "./OnboardingReview";
 import { ScrollArea } from "@/components/ui/ScrollArea";
 import { Button } from "@/components/ui/Button";
-import { generateId, sanitizeInput, detectPromptInjection } from "@/lib/utils";
+import { generateId } from "@/lib/utils";
 import { ArrowRight, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { UI_COPY } from "@/lib/ui-copy";
-import { getAsyncFailureMessage } from "@/lib/ui-errors";
-import type {
-  ChatMessage,
-  OnboardingApiResponse,
-  OnboardingInputSource,
-} from "@/types/schema";
+import {
+  useOnboardingChat,
+  useWelcomeMessage,
+  useTranscriptView,
+} from "@/hooks/use-onboarding-chat";
 
 export function ZenTerminal() {
   const {
@@ -27,133 +26,19 @@ export function ZenTerminal() {
     activeVariable,
     suggestedReplies,
     sessionLanguage,
-    applyOnboardingResponse,
     isOnboardingComplete,
     onboardingConfirmed,
     setPhase,
   } = useAppStore();
 
-  const [isLoading, setIsLoading] = React.useState(false);
+  const { isLoading, sendMessage } = useOnboardingChat();
+  useWelcomeMessage(UI_COPY.onboarding.welcome);
+
   const [showSidebar, setShowSidebar] = React.useState(true);
-  const messagesEndRef = React.useRef<HTMLDivElement>(null);
-  const hasInitialized = React.useRef(false);
-
-  const scrollToBottom = React.useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, []);
-
-  React.useEffect(() => {
-    scrollToBottom();
-  }, [messages, isLoading, scrollToBottom]);
-
-  React.useEffect(() => {
-    document.documentElement.lang = sessionLanguage;
-  }, [sessionLanguage]);
-
-  const _hasHydrated = useAppStore((state) => state._hasHydrated);
-
-  React.useEffect(() => {
-    // Only initialize welcome message once after store hydration is ready and if no messages exist
-    if (!hasInitialized.current && _hasHydrated) {
-      const currentMessages = useAppStore.getState().messages;
-      if (currentMessages.length === 0) {
-        hasInitialized.current = true;
-        const welcomeMessage: ChatMessage = {
-          id: generateId(),
-          role: "assistant",
-          content: UI_COPY.onboarding.welcome,
-          timestamp: Date.now(),
-        };
-        addMessage(welcomeMessage);
-      } else {
-        hasInitialized.current = true;
-      }
-    }
-  }, [_hasHydrated, addMessage]);
-
-  const handleSendMessage = async (
-    content: string,
-    inputSource: OnboardingInputSource = "manual",
-    selectedRecommendation = false
-  ) => {
-    const sanitized = sanitizeInput(content);
-
-    if (detectPromptInjection(sanitized)) {
-      const warningMessage: ChatMessage = {
-        id: generateId(),
-        role: "assistant",
-        content:
-          "Permintaan tersebut tidak dapat diproses karena tidak berkaitan dengan penyusunan konteks proyek. Silakan jelaskan kebutuhan proyek Anda tanpa instruksi untuk mengubah aturan sistem.",
-        timestamp: Date.now(),
-      };
-      addMessage(warningMessage);
-      return;
-    }
-
-    const userMessage: ChatMessage = {
-      id: generateId(),
-      role: "user",
-      content: sanitized,
-      timestamp: Date.now(),
-    };
-    addMessage(userMessage);
-
-    setIsLoading(true);
-    const controller = new AbortController();
-    const timeoutId = window.setTimeout(() => controller.abort(), 55_000);
-
-    try {
-      // Use messages directly from store (userMessage is already appended by addMessage)
-      const payloadMessages = useAppStore.getState().messages.map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-      }));
-
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: payloadMessages,
-          mustHaves: useAppStore.getState().mustHaves,
-          discovery: useAppStore.getState().discovery,
-          sessionLanguage: useAppStore.getState().sessionLanguage,
-          languageLocked: useAppStore.getState().languageLocked,
-          inputSource,
-          selectedRecommendation,
-        }),
-        signal: controller.signal,
-      });
-
-      const data = (await response.json().catch(() => null)) as
-        | OnboardingApiResponse
-        | null;
-      if (!data?.reply) throw new Error(`API error: ${response.status}`);
-
-      addMessage({
-        id: generateId(),
-        role: "assistant",
-        content: data.reply,
-        timestamp: Date.now(),
-      });
-      applyOnboardingResponse(data);
-    } catch (error) {
-      console.error("[handleSendMessage] Error:", error);
-      const errorMessage: ChatMessage = {
-        id: generateId(),
-        role: "assistant",
-        content: getAsyncFailureMessage(error, "onboarding"),
-        timestamp: Date.now(),
-      };
-      addMessage(errorMessage);
-    } finally {
-      window.clearTimeout(timeoutId);
-      setIsLoading(false);
-    }
-  };
-
-  const handleGenerateDocuments = () => {
-    setPhase("generating");
-  };
+  const messagesEndRef = useTranscriptView(
+    [messages, isLoading],
+    sessionLanguage
+  );
 
   return (
     <div className="workspace-frame flex h-[100dvh] overflow-hidden">
@@ -182,7 +67,7 @@ export function ZenTerminal() {
           {onboardingConfirmed && (
             <div className="mt-auto border-t border-border p-5">
               <Button
-                onClick={handleGenerateDocuments}
+                onClick={() => setPhase("generating")}
                 variant="success"
                 className="w-full"
               >
@@ -263,7 +148,7 @@ export function ZenTerminal() {
           {onboardingConfirmed && (
             <div className="px-4 pb-3">
               <Button
-                onClick={handleGenerateDocuments}
+                onClick={() => setPhase("generating")}
                 variant="success"
                 className="w-full"
               >
@@ -282,7 +167,7 @@ export function ZenTerminal() {
                 key={suggestion.label}
                 type="button"
                 onClick={() =>
-                  void handleSendMessage(
+                  void sendMessage(
                     suggestion.value,
                     "suggestion",
                     suggestion.recommended === true
@@ -306,7 +191,7 @@ export function ZenTerminal() {
         )}
 
         <ChatInput
-          onSubmit={handleSendMessage}
+          onSubmit={sendMessage}
           disabled={isLoading}
           placeholder={
             onboardingConfirmed

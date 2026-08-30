@@ -1,4 +1,5 @@
 import { ANTI_SLOP_DIRECTIVES } from "@/prompts/anti-slop-prompt";
+import { sanitizeText } from "@/lib/sanitize";
 import type { MustHavesState, DocumentName } from "@/types/schema";
 import { MUST_HAVE_LABELS, MUST_HAVE_KEYS } from "@/types/schema";
 
@@ -102,7 +103,7 @@ function buildArchitecturePrompt(
   previousDocs: Record<string, string>
 ): string {
   const prdContext = isValidDoc(previousDocs["PRD"])
-    ? `\n## REFERENCE: PRD\n${previousDocs["PRD"]}\n`
+    ? `\n## REFERENCE: PRD\n${sanitizeText(previousDocs["PRD"], 2000)}\n`
     : "";
 
   return `You are a senior software architect designing the system architecture.

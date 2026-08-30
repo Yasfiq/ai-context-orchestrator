@@ -6,6 +6,7 @@ import type { DocumentName } from "@/types/schema";
 import { COP_GENERATION_ORDER, MUST_HAVE_KEYS } from "@/types/schema";
 import { documentModelName, universalLLM } from "@/lib/llm-provider";
 import { validateModelDocument } from "@/lib/llm-output";
+import { logger, errorFields } from "@/lib/logger";
 
 export const maxDuration = 120;
 
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
     const finishReason = await result.finishReason;
     const validated = validateModelDocument(content, finishReason);
 
-    console.info("[/api/generate/single] completed", {
+    logger.info("[/api/generate/single] completed", {
       model: documentModelName,
       documentName,
       finishReason,
@@ -76,10 +77,10 @@ export async function POST(request: NextRequest) {
       content: validated.content,
     });
   } catch (error) {
-    console.error("[/api/generate/single] failed", {
+    logger.error("[/api/generate/single] failed", {
       model: documentModelName,
       durationMs: Date.now() - startedAt,
-      error: error instanceof Error ? error.message : "Unknown error",
+      ...errorFields(error),
     });
     return NextResponse.json(
       {
