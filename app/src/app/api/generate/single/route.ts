@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { streamText } from "ai";
 import { buildCopPrompt } from "@/prompts/cop-pipeline";
-import { sanitizeText, validateMustHaves } from "@/lib/sanitize";
+import { sanitizeText, validateMustHaves, containsPromptInjection } from "@/lib/sanitize";
 import type { DocumentName } from "@/types/schema";
 import { COP_GENERATION_ORDER, MUST_HAVE_KEYS } from "@/types/schema";
 import { documentModelName, universalLLM } from "@/lib/llm-provider";
@@ -46,6 +46,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (MUST_HAVE_KEYS.some((key) => containsPromptInjection(mustHaves[key] || ""))) {
+      return NextResponse.json(
+        { error: "Input mengandung pola yang melanggar kebijakan keamanan." },
+        { status: 400 }
+      );
+    }
+
     const prompt = buildCopPrompt(documentName, mustHaves, previousDocuments);
 
     const result = streamText({
@@ -81,12 +88,11 @@ export async function POST(request: NextRequest) {
       durationMs: Date.now() - startedAt,
       error: error instanceof Error ? error.message : "Unknown error",
     });
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.error("[/api/generate/single] error details:", errorMessage);
     return NextResponse.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Dokumen belum dapat disusun.",
+        error: "Dokumen belum dapat disusun. Silakan coba kembali.",
       },
       { status: 500 }
     );

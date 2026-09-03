@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { streamText } from "ai";
 import { buildCopPrompt } from "@/prompts/cop-pipeline";
-import { validateMustHaves } from "@/lib/sanitize";
+import { validateMustHaves, containsPromptInjection } from "@/lib/sanitize";
 import type { DocumentName } from "@/types/schema";
 import { COP_GENERATION_ORDER, MUST_HAVE_KEYS } from "@/types/schema";
 import { documentModelName, universalLLM } from "@/lib/llm-provider";
@@ -22,6 +22,15 @@ export async function POST(request: NextRequest) {
       return new Response(
         JSON.stringify({
           error: "All 8 Must-Have variables must be filled before generating documents.",
+        }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    if (MUST_HAVE_KEYS.some((key) => containsPromptInjection(mustHaves[key] || ""))) {
+      return new Response(
+        JSON.stringify({
+          error: "Input mengandung pola yang melanggar kebijakan keamanan.",
         }),
         { status: 400, headers: { "Content-Type": "application/json" } }
       );
@@ -94,8 +103,7 @@ export async function POST(request: NextRequest) {
               `data: ${JSON.stringify({
                 type: "error",
                 document: docName,
-                error:
-                  docError instanceof Error ? docError.message : "Unknown error",
+                error: "Dokumen belum dapat disusun. Silakan coba kembali.",
               })}\n\n`
             );
             break;

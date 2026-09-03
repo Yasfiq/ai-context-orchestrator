@@ -72,15 +72,15 @@ export async function downloadAsPdf(document: GeneratedDocument): Promise<void> 
   container.style.backgroundColor = "#ffffff";
 
   const options = {
-    margin: [12, 12, 12, 12],
+    margin: [12, 12, 12, 12] as [number, number, number, number],
     filename: document.filename.replace(".md", ".pdf"),
-    image: { type: "jpeg", quality: 0.98 },
+    image: { type: "jpeg" as const, quality: 0.98 },
     html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+    jsPDF: { unit: "mm", format: "a4", orientation: "portrait" as const },
     pagebreak: { mode: ["avoid-all", "css", "legacy"] },
   };
 
-  await html2pdf().set(options).from(container).save();
+  await html2pdf().set(options as any).from(container).save();
 }
 
 function escapeHtml(value: string): string {
