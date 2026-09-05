@@ -1,5 +1,5 @@
-import { ANTI_SLOP_DIRECTIVES } from "@/prompts/anti-slop-prompt";
 import { sanitizeText } from "@/lib/sanitize";
+import { ANTI_SLOP_DIRECTIVES } from "@/prompts/anti-slop-prompt";
 import type { MustHavesState, DocumentName } from "@/types/schema";
 import { MUST_HAVE_LABELS, MUST_HAVE_KEYS } from "@/types/schema";
 
@@ -42,37 +42,50 @@ ${ANTI_SLOP_DIRECTIVES}
 - Focus strictly on the document requirements below.
 `;
 
-/**
- * Build a CoP prompt for a specific document type.
- * Each document may receive previously generated documents as additional context.
- */
-export function buildCopPrompt(
-  documentName: DocumentName,
-  mustHaves: MustHavesState,
-  previousDocuments: Record<string, string> = {}
-): string {
-  const context = formatMustHavesContext(mustHaves);
-
-  switch (documentName) {
-    case "PRD":
-      return buildPrdPrompt(context);
-    case "ARCHITECTURE":
-      return buildArchitecturePrompt(context, previousDocuments);
-    case "AGENTS":
-      return buildAgentsPrompt(context, previousDocuments);
-    default:
-      throw new Error(`Unknown document type: ${documentName}`);
-  }
+function isValidDoc(content?: string): boolean {
+  if (!content || typeof content !== "string") return false;
+  const trimmed = content.trim();
+  if (trimmed.length === 0) return false;
+  if (trimmed.startsWith("> ⚠️ Error generating")) return false;
+  return true;
 }
 
-function buildPrdPrompt(context: string): string {
-  return `You are a senior product manager creating a Product Requirements Document (PRD).
-${BASE_INSTRUCTION}
+/**
+ * Renders reference blocks for every dependency of a document.
+ * Kept byte-identical to the previous per-builder hardcoding: each
+ * dependency renders as "\n## REFERENCE: <LABEL>\n<content>\n".
+ */
+function buildReferences(
+  documentName: DocumentName,
+  previousDocuments: Record<string, string>
+): string {
+  // PRD has no reference slot in the prompt template; ARCHITECTURE and
+  // AGENTS always render an (optional) slot line after PROJECT CONTEXT.
+  const deps: DocumentName[] =
+    documentName === "PRD"
+      ? []
+      : documentName === "ARCHITECTURE"
+        ? ["PRD"]
+        : ["PRD", "ARCHITECTURE"];
 
-## PROJECT CONTEXT
-${context}
+  return deps
+    .map((dep) => {
+      const depContent = previousDocuments[dep];
+      if (!isValidDoc(depContent)) return "";
+      return `\n## REFERENCE: ${dep}\n${sanitizeText(depContent, 2000)}\n`;
+    })
+    .join("\n");
+}
 
-## DOCUMENT REQUIREMENTS
+interface DocumentSpec {
+  role: string;
+  requirements: string;
+}
+
+const DOCUMENT_SPECS: Record<DocumentName, DocumentSpec> = {
+  PRD: {
+    role: "You are a senior product manager creating a Product Requirements Document (PRD).",
+    requirements: `
 Generate a comprehensive PRD with the following sections:
 
 1. **Product Vision & Problem Statement** — What problem does this product solve? Why does it matter?
@@ -87,33 +100,11 @@ Generate a comprehensive PRD with the following sections:
 7. **Success Metrics** — How will we measure if this product is successful?
 8. **Risks & Mitigation** — Key risks and how to address them.
 
-Make it detailed enough that a development team can start building from this document.`;
-}
-
-function isValidDoc(content?: string): boolean {
-  if (!content || typeof content !== "string") return false;
-  const trimmed = content.trim();
-  if (trimmed.length === 0) return false;
-  if (trimmed.startsWith("> ⚠️ Error generating")) return false;
-  return true;
-}
-
-function buildArchitecturePrompt(
-  context: string,
-  previousDocs: Record<string, string>
-): string {
-  const prdContext = isValidDoc(previousDocs["PRD"])
-    ? `\n## REFERENCE: PRD\n${sanitizeText(previousDocs["PRD"], 2000)}\n`
-    : "";
-
-  return `You are a senior software architect designing the system architecture.
-${BASE_INSTRUCTION}
-
-## PROJECT CONTEXT
-${context}
-${prdContext}
-
-## DOCUMENT REQUIREMENTS
+Make it detailed enough that a development team can start building from this document.`,
+  },
+  ARCHITECTURE: {
+    role: "You are a senior software architect designing the system architecture.",
+    requirements: `
 Generate an Architecture document with the following sections:
 
 1. **Technology Stack** — List every major technology/library/framework with rationale for each choice.
@@ -125,29 +116,11 @@ Generate an Architecture document with the following sections:
 7. **Security Architecture** — How security is enforced at each layer.
 8. **Deployment Architecture** — How the app will be deployed and scaled.
 
-Ensure the architecture aligns with the tech stack and features described in the PRD.`;
-}
-
-function buildAgentsPrompt(
-  context: string,
-  previousDocs: Record<string, string>
-): string {
-  const prdContext = isValidDoc(previousDocs["PRD"])
-    ? `\n## REFERENCE: PRD\n${previousDocs["PRD"]}\n`
-    : "";
-  const archContext = isValidDoc(previousDocs["ARCHITECTURE"])
-    ? `\n## REFERENCE: ARCHITECTURE\n${previousDocs["ARCHITECTURE"]}\n`
-    : "";
-
-  return `You are an expert in AI-assisted development workflows, creating an AGENTS.md file.
-${BASE_INSTRUCTION}
-
-## PROJECT CONTEXT
-${context}
-${prdContext}
-${archContext}
-
-## DOCUMENT REQUIREMENTS
+Ensure the architecture aligns with the tech stack and features described in the PRD.`,
+  },
+  AGENTS: {
+    role: "You are an expert in AI-assisted development workflows, creating an AGENTS.md file.",
+    requirements: `
 Generate an AGENTS.md file that defines AI agent personas for this project. For each agent:
 
 1. **Agent Tag** — A unique identifier (e.g., @frontend-specialist, @backend-engineer)
@@ -164,158 +137,32 @@ Create agents that cover:
 - Quality assurance & testing
 - Any domain-specific agents relevant to the project
 
-Each agent should be distinct with clear boundaries. Avoid overlap in responsibilities.`;
-}
+Each agent should be distinct with clear boundaries. Avoid overlap in responsibilities.`,
+  },
+};
 
-function buildRulesPrompt(
-  context: string,
-  previousDocs: Record<string, string>
+/**
+ * Build a CoP prompt for a specific document type.
+ * Each document may receive previously generated documents as additional context.
+ */
+export function buildCopPrompt(
+  documentName: DocumentName,
+  mustHaves: MustHavesState,
+  previousDocuments: Record<string, string> = {}
 ): string {
-  const prdContext = isValidDoc(previousDocs["PRD"])
-    ? `\n## REFERENCE: PRD\n${previousDocs["PRD"]}\n`
-    : "";
-  const archContext = isValidDoc(previousDocs["ARCHITECTURE"])
-    ? `\n## REFERENCE: ARCHITECTURE\n${previousDocs["ARCHITECTURE"]}\n`
-    : "";
+  const spec = DOCUMENT_SPECS[documentName];
+  if (!spec) {
+    throw new Error(`Unknown document type: ${documentName}`);
+  }
+  const context = formatMustHavesContext(mustHaves);
+  const references = buildReferences(documentName, previousDocuments);
 
-  return `You are a tech lead establishing coding rules and conventions for a development team.
-${BASE_INSTRUCTION}
+  // PRD has no reference slot in its template (first in chain);
+  // ARCHITECTURE/AGENTS always reserve the slot, even when empty.
+  const body =
+    documentName === "PRD"
+      ? `## PROJECT CONTEXT\n${context}\n\n## DOCUMENT REQUIREMENTS`
+      : `## PROJECT CONTEXT\n${context}\n${references}\n\n## DOCUMENT REQUIREMENTS`;
 
-## PROJECT CONTEXT
-${context}
-${prdContext}
-${archContext}
-
-## DOCUMENT REQUIREMENTS
-Generate a RULES.md document with the following sections:
-
-1. **Scope Boundaries** — What is explicitly in/out of scope. Hard limits on feature creep.
-2. **Architecture & State Management Rules** — Mandatory patterns, forbidden anti-patterns.
-3. **Code Naming Conventions** — File naming (kebab-case, PascalCase, etc.), variable naming (camelCase), type/interface naming conventions.
-4. **Styling & UI/UX Rules** — Mandatory UI framework usage, color palette, animation guidelines.
-5. **Security & Guardrails** — Input validation rules, API key handling, error exposure prevention.
-6. **Error Handling Standards** — How errors should be caught, logged, and displayed to users.
-7. **Git & Version Control** — Commit message format, branch naming, PR requirements.
-8. **Performance Guidelines** — Bundle size limits, lazy loading requirements, caching strategies.
-
-Each rule should be actionable and enforceable. Use "MUST", "MUST NOT", "SHOULD", "SHOULD NOT" language for clarity.`;
-}
-
-function buildWorkflowPrompt(
-  context: string,
-  previousDocs: Record<string, string>
-): string {
-  const prdContext = isValidDoc(previousDocs["PRD"])
-    ? `\n## REFERENCE: PRD\n${previousDocs["PRD"]}\n`
-    : "";
-  const archContext = isValidDoc(previousDocs["ARCHITECTURE"])
-    ? `\n## REFERENCE: ARCHITECTURE\n${previousDocs["ARCHITECTURE"]}\n`
-    : "";
-  const rulesContext = isValidDoc(previousDocs["RULES"])
-    ? `\n## REFERENCE: RULES\n${previousDocs["RULES"]}\n`
-    : "";
-
-  return `You are a DevOps and process engineering specialist creating a workflow document.
-${BASE_INSTRUCTION}
-
-## PROJECT CONTEXT
-${context}
-${prdContext}
-${archContext}
-${rulesContext}
-
-## DOCUMENT REQUIREMENTS
-Generate a WORKFLOW.md document with the following sections:
-
-1. **Git Branching Strategy** — Branch naming conventions, merge strategy (squash, rebase, etc.), protected branches.
-2. **Development Workflow** — Step-by-step process from picking up a task to deployment.
-3. **Code Review Standards** — What reviewers should check, approval requirements, review SLA.
-4. **CI/CD Pipeline** — Build, test, lint, deploy stages. What runs on each trigger.
-5. **Environment Management** — Development, staging, production environment specifications.
-6. **Testing Workflow** — When and how to write tests, coverage requirements, test naming.
-7. **Release Process** — Versioning strategy (semver), changelog generation, release checklist.
-8. **Incident Response** — How to handle production issues, rollback procedures, post-mortem process.
-
-Make workflows practical and immediately implementable by the development team.`;
-}
-
-function buildSkillsMatrixPrompt(
-  context: string,
-  previousDocs: Record<string, string>
-): string {
-  const agentsContext = isValidDoc(previousDocs["AGENTS"])
-    ? `\n## REFERENCE: AGENTS\n${previousDocs["AGENTS"]}\n`
-    : "";
-  const archContext = isValidDoc(previousDocs["ARCHITECTURE"])
-    ? `\n## REFERENCE: ARCHITECTURE\n${previousDocs["ARCHITECTURE"]}\n`
-    : "";
-
-  return `You are a project coordinator creating a skills matrix for AI-assisted development.
-${BASE_INSTRUCTION}
-
-## PROJECT CONTEXT
-${context}
-${agentsContext}
-${archContext}
-
-## DOCUMENT REQUIREMENTS
-Generate a SKILLS_MATRIX.md document that maps tasks to the appropriate AI agents. Include:
-
-1. **Agent Overview Table** — A Markdown table listing all agents, their primary domain, and expertise level.
-2. **Task-to-Agent Mapping** — For each major feature/component area:
-   - Which agent should be called for which task
-   - When to use which agent (decision criteria)
-   - Example prompts for invoking each agent
-3. **Collaboration Patterns** — When multiple agents need to work together:
-   - Agent handoff sequences (e.g., architect designs → frontend implements)
-   - Cross-cutting concerns that need multiple agents
-4. **Escalation Matrix** — When a task exceeds an agent's scope, who to escalate to.
-5. **Prompt Templates** — 2-3 ready-to-use prompt templates per agent, tailored to this project's specific tech stack and features.
-
-The goal is to give the developer a quick-reference guide so they always know which agent to call for any given task.`;
-}
-
-function buildImplementationPlanPrompt(
-  context: string,
-  previousDocs: Record<string, string>
-): string {
-  const prdContext = isValidDoc(previousDocs["PRD"])
-    ? `\n## REFERENCE: PRD\n${previousDocs["PRD"]}\n`
-    : "";
-  const archContext = isValidDoc(previousDocs["ARCHITECTURE"])
-    ? `\n## REFERENCE: ARCHITECTURE\n${previousDocs["ARCHITECTURE"]}\n`
-    : "";
-  const agentsContext = isValidDoc(previousDocs["AGENTS"])
-    ? `\n## REFERENCE: AGENTS\n${previousDocs["AGENTS"]}\n`
-    : "";
-
-  return `You are a senior tech lead breaking down a product into micro-implementation tasks.
-${BASE_INSTRUCTION}
-
-## PROJECT CONTEXT
-${context}
-${prdContext}
-${archContext}
-${agentsContext}
-
-## DOCUMENT REQUIREMENTS
-Generate an IMPLEMENTATION_PLAN.md document with detailed, sequential phases. For each phase:
-
-1. **Phase Name & Objective** — Clear one-line goal.
-2. **Prerequisites** — What must be completed before starting this phase.
-3. **Steps** — Numbered micro-tasks. Each step should be:
-   - Small enough to complete in one AI prompt session
-   - Specific enough that the developer knows exactly what to build
-   - Include the recommended agent tag to use (from AGENTS.md)
-4. **Completion Criteria** — How to verify the phase is done.
-5. **Estimated Complexity** — Low / Medium / High per step.
-
-Guidelines:
-- Break features from the PRD into the smallest possible implementation units.
-- Order phases logically: foundation → data layer → UI → business logic → integration → polish.
-- Each step should be a self-contained micro-prompt that won't overwhelm the AI with cognitive load.
-- Include setup/config phases at the beginning and testing/polish phases at the end.
-- Aim for 5-8 phases with 3-6 steps each.
-
-This document is the developer's roadmap for building the entire application using AI-assisted coding.`;
+  return `${spec.role}\n${BASE_INSTRUCTION}\n\n${body}${spec.requirements}`;
 }
