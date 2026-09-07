@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+
+# Environment and secrets
+.dev.vars
+!.dev.vars.example
+.env
+.env.*
+!.env.example
+
+# Wrangler and Cloudflare build artifacts
+.wrangler/
+dist/
+
+# Test coverage
+coverage/
+
+# Logs
+*.log
+npm-debug.log*

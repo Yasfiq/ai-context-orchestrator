@@ -2,11 +2,10 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { checkRateLimit } from "@/lib/rate-limiter";
 
-// Apply rate limit to API routes only
+// Apply rate limit & internal service headers to API routes
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  // Only apply to API routes
   if (pathname.startsWith("/api/")) {
     const { allowed, retryAfter } = checkRateLimit(request);
 
@@ -21,6 +20,18 @@ export function middleware(request: NextRequest) {
           },
         }
       );
+    }
+
+    // Forward internal service secret to Worker edge securely
+    const workerSecret = process.env.WORKER_SECRET;
+    if (workerSecret) {
+      const requestHeaders = new Headers(request.headers);
+      requestHeaders.set("x-worker-secret", workerSecret);
+      return NextResponse.next({
+        request: {
+          headers: requestHeaders,
+        },
+      });
     }
   }
 

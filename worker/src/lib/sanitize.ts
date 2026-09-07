@@ -1,9 +1,9 @@
 /**
- * Server-side input sanitization and validation utilities.
+ * Server-side input sanitization and validation utilities for Cloudflare Workers.
  * Provides defense-in-depth against prompt injection and malicious inputs.
  */
 
-import type { MustHavesState } from "@/types/schema";
+import type { MustHavesState } from "../types/schema";
 
 const INJECTION_PATTERNS: RegExp[] = [
   // English injection patterns
@@ -118,9 +118,6 @@ export function validateChatMessages(
   });
 }
 
-/**
- * Extract and sanitize a single string | null field from raw input.
- */
 function extractField(raw: Record<string, unknown>, key: string): string | null {
   const value = raw[key];
   if (value === null || value === undefined) return null;

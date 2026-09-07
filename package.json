@@ -1,0 +1,16 @@
+{
+  "name": "ai-context-orchestrator-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev:worker": "npm --prefix worker run dev",
+    "dev:app": "npm --prefix app run dev",
+    "test:worker": "npm --prefix worker test",
+    "test:app": "npm --prefix app run test:run",
+    "test:all": "npm run test:worker && npm run test:app",
+    "typecheck:worker": "npm --prefix worker run typecheck",
+    "typecheck:app": "npm --prefix app run typecheck",
+    "typecheck:all": "npm run typecheck:worker && npm run typecheck:app",
+    "deploy:worker": "npm --prefix worker run deploy"
+  }
+}

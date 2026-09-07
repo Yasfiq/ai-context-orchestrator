@@ -12,9 +12,9 @@ Berdasarkan kebutuhan MVP (stateless, performa cepat, Editorial Systems Console,
     *   *Alasan:* Token visual, state aksesibel, Markdown reader, dan layout responsif dapat dikendalikan tanpa menambah component library baru.
 *   **State Management:** Zustand
     *   *Alasan:* Ringan, boilerplate minimal. Sangat cocok untuk mengelola 8 variabel "Must-Haves" selama sesi berjalan di klien.
-*   **Backend / API Layer:** Next.js Route Handlers (Serverless Functions)
-    *   *Alasan:* Mengisolasi eksekusi LLM dan menyembunyikan API keys dengan aman dari browser.
-*   **LLM SDK:** Vercel AI SDK
+*   **Backend / API Layer:** Cloudflare Workers + Hono.js (dengan fallback legacy Next.js Route Handlers)
+    *   *Alasan:* Berjalan di edge V8 Isolates dengan cold-start ~0ms, mendukung long HTTP streaming SSE tanpa terbentur batas waktu serverless standard (10s–15s), serta konsumsi resource ultra-efisien.
+*   **LLM SDK:** Vercel AI SDK (`ai` & `@ai-sdk/openai`)
     *   *Alasan:* Menyediakan integrasi provider OpenAI-compatible untuk onboarding, generation, dan revision.
 
 ### 2. High-Level System Architecture
@@ -25,7 +25,7 @@ graph TD
     UI -->|2. Chat Interaction| StateManager[Zustand - 8 Variables State]
     StateManager -->|3. Check Completion| Valid{Are 8 vars filled?}
     Valid -- No --> UI
-    Valid -- Yes -->|4. Trigger Generate| API[Next.js API Route / Serverless]
+    Valid -- Yes -->|4. Trigger Generate| API[Cloudflare Worker / Hono API]
     API -->|5. Chain of Prompts| LLM[OpenAI-compatible LLM Provider]
     LLM -->|6. Raw Documents| AntiSlop[Anti-Slop Engine & Polish Layer]
     AntiSlop -->|7. Polished Documents| API
@@ -35,24 +35,22 @@ graph TD
 ### 3. Folder Structure & Data Flow
 
 ```text
-app/src
- ├── /app
- │    ├── /api
- │    │    ├── /chat            # Endpoint onboarding
- │    │    ├── /generate        # Endpoint penyusunan dokumen
- │    │    └── /tweak           # Endpoint revisi dokumen
- │    ├── page.tsx              # Application shell
- │    └── layout.tsx            # Metadata dan layout utama
- ├── /components
- │    ├── /ui                   # Komponen generik Shadcn
- │    └── /features             # Onboarding, generation, results, reader, revision
- ├── /store
- │    └── useAppStore.ts        # Zustand state (8 variabel Must-Haves & status UI)
- ├── /prompts                   # Direktori prompt instruksi sistem (Strictly Backend)
- │    ├── onboardingPrompt.ts   # Guardrails & sistem ekstraksi 8 variabel
- │    └── copPipeline.ts        # Alur sekuensial generator file .md
- └── /types
-      └── schema.ts             # Domain types, labels, dan document state
+├── app/src
+│    ├── /app
+│    │    ├── /api              # [Legacy Fallback] Endpoint Next.js
+│    │    ├── page.tsx          # Application shell
+│    │    └── layout.tsx        # Metadata dan layout utama
+│    ├── /components           # UI components & Markdown reader
+│    ├── /store                # Zustand state (8 variabel Must-Haves & UI status)
+│    └── /types                # Shared domain types
+├── worker/                    # [Production API] Cloudflare Workers + Hono
+│    ├── wrangler.jsonc        # Konfigurasi Cloudflare Worker & bindings
+│    ├── src/
+│    │    ├── index.ts         # Hono entry point, CORS, & health check
+│    │    ├── routes/          # /api/chat, /api/generate, /api/tweak
+│    │    ├── lib/             # LLM provider, sanitizer, parser, anti-slop
+│    │    └── prompts/         # Onboarding & CoP prompt pipeline
+│    └── ...
 ```
 
 ### 4. Data Management & Keamanan

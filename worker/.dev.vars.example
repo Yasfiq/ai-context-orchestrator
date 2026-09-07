@@ -1,0 +1,8 @@
+# Cloudflare Worker Environment Variables for Local Development
+LLM_API_KEY="your-api-key-here"
+LLM_BASE_URL="https://api.openai.com/v1"
+LLM_MODEL_NAME="gpt-4o"
+LLM_CHAT_MODEL_NAME="gpt-4o"
+LLM_DOCUMENT_MODEL_NAME="gpt-4o"
+LLM_TWEAK_MODEL_NAME="gpt-4o"
+ALLOWED_ORIGINS="http://localhost:3000"
