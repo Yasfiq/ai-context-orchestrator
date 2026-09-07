@@ -126,7 +126,14 @@ npm run typecheck:all
 
 ## Security Architecture
 
-Lihat panduan lengkap pada [SECURITY.md](SECURITY.md) untuk detail 5 lapisan keamanan (*Defense-in-Depth*).
+Aplikasi ini menerapkan prinsip *Defense-in-Depth* dengan 5 lapisan pertahanan:
+1. **Service-to-Service Auth (`WORKER_SECRET`):** Edge worker hanya dapat diakses melalui server proxy Next.js menggunakan header autentikasi internal.
+2. **Edge Rate Limiting:** Pembatasan frekuensi permintaan per IP address (`/api/chat`: 30 req/m, `/api/generate`: 10 req/m, `/api/tweak`: 20 req/m).
+3. **Payload Size Guard:** Pembatasan ukuran request body maksimal 256KB untuk mencegah eksploitasi memori dan DoS.
+4. **OWASP HTTP Security Headers:** Proteksi browser standar (`nosniff`, `DENY` frame, `strict-origin-when-cross-origin`, HSTS).
+5. **Anti-Prompt Injection & Unicode Sanitization:** Pembersihan otomatis karakter zero-width, right-to-left override, dan pencegahan prompt injection.
+
+> Dokumen spesifikasi teknis lengkap, aturan arsitektur, dan manual test cases tersedia di branch [`docs/specifications`](https://github.com/Yasfiq/ai-context-orchestrator/tree/docs/specifications).
 
 ## License
 
