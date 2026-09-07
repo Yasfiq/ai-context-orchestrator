@@ -43,7 +43,7 @@ Dokumen ini berisi skenario pengujian manual (User Acceptance Testing) untuk mem
 |----|----------|-------------------|----------------------|--------|
 | CP-01 | Sequential Document Generation | 1. Selesaikan onboarding (8/8).<br>2. Klik "Generate Documents". | UI pindah ke layar Loading. Dokumen mulai berstatus ✓ satu per satu dari atas ke bawah. | ⬜ |
 | CP-02 | Error Handling Timeout / Rate Limit | 1. Putus koneksi internet atau set dummy error di server.<br>2. Klik Generate. | Muncul error state dengan tombol "Try Again", aplikasi tidak blank (crash). | ⬜ |
-| CP-03 | Redirect ke Results | 1. Tunggu 7 dokumen selesai terbuat. | Setelah dokumen ke-7 (IMPLEMENTATION_PLAN) ✓, layar transisi ke ResultsView. | ⬜ |
+| CP-03 | Redirect ke Results | 1. Tunggu 3 dokumen MVP selesai terbuat (PRD, ARCHITECTURE, AGENTS). | Setelah dokumen ke-3 (AGENTS) ✓, layar transisi ke ResultsView. | ⬜ |
 | CP-04 | Progress Monoton | 1. Amati progress selama seluruh generation.<br>2. Tunggu hingga beberapa dokumen selesai. | Dokumen yang sudah ✓ tidak pernah kembali menampilkan loading. | ⬜ |
 | CP-05 | Retry dari Dokumen Gagal | 1. Simulasikan kegagalan pada salah satu dokumen.<br>2. Klik Try Again. | Dokumen yang selesai tetap tersimpan dan retry dimulai dari dokumen gagal. | ⬜ |
 | CP-06 | Dependency Stale | 1. Tweak atau regenerate PRD.<br>2. Periksa tab dokumen turunannya. | Dokumen yang bergantung pada PRD ditandai perlu diselaraskan tanpa menjalankan loading otomatis. | ⬜ |
@@ -57,7 +57,7 @@ Dokumen ini berisi skenario pengujian manual (User Acceptance Testing) untuk mem
 | RV-02 | Render Markdown | 1. Periksa dokumen PRD. | Headings, list, bold, dan code block ter-render rapi dengan *styling* tailwind typography/prose. | ⬜ |
 | RV-03 | Export Markdown (.md) | 1. Klik tombol "⬇ .md" pada PRD. | File `PRD.md` terunduh ke komputer. | ⬜ |
 | RV-04 | Export PDF | 1. Klik tombol "⬇ .pdf" pada PRD. | Konversi client-side berjalan, file `PRD.pdf` terunduh dan isinya rapi. | ⬜ |
-| RV-05 | Download All | 1. Klik "⬇ Download All (.md)". | Browser mengunduh 7 file markdown secara berurutan. | ⬜ |
+| RV-05 | Download All | 1. Klik "⬇ Download All (.md)". | Browser mengunduh 3 file markdown MVP secara berurutan. | ⬜ |
 
 ---
 

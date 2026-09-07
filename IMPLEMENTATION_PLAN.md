@@ -88,3 +88,25 @@ Dokumen ini memuat peta jalan implementasi (Implementation Plan) yang dipecah me
 *   **Langkah 4:** Sambungkan sanitasi anti-slop di ujung pipeline `/api/generate/route.ts`, `/api/generate/single/route.ts`, dan `/api/tweak/route.ts`.
 *   **Langkah 5:** Buat automated test suite `app/src/__tests__/anti-slop.test.ts` untuk memverifikasi eliminasi slop, proteksi Mermaid, dan zero regression.
 *   **Kriteria Selesai:** Seluruh dokumen hasil CoP dan tweak bersih dari klise AI (*delve, seamless, revolutionize, merevolusi, dll*), diagram Mermaid tetap valid, dan 100% test suite lulus.
+
+---
+
+### FASE 9: Migrasi Backend ke Cloudflare Workers & Hono (Edge Architecture)
+**Tujuan:** Mengatasi batas waktu eksekusi (timeout) serverless standar dengan memindahkan seluruh pemrosesan LLM, streaming SSE, dan sanitasi dokumen ke edge runtime Cloudflare Workers dengan framework Hono.js, serta menerapkan arsitektur keamanan 5 lapis (*Defense-in-Depth*).
+
+*   **Langkah 1:** Inisialisasi direktori `worker/` sebagai package mandiri dengan Hono.js, TypeScript, dan konfigurasi Wrangler (`wrangler.jsonc`).
+*   **Langkah 2:** Pindahkan dan optimalkan seluruh rute LLM ke edge Hono router:
+    *   `POST /api/chat`: Onboarding interaktif dan ekstraksi structured output (8 variabel Must-Haves).
+    *   `POST /api/generate`: Mesin Chain of Prompts (CoP) dengan streaming Server-Sent Events (SSE) untuk pembentukan dokumen PRD, ARCHITECTURE, dan AGENTS.
+    *   `POST /api/generate/single`: Pembuatan dokumen spesifik tunggal secara atomik.
+    *   `POST /api/tweak`: Revisi dokumen terisolasi berdasarkan instruksi pengguna.
+    *   `GET /health`: Pemeriksaan kesehatan edge worker.
+*   **Langkah 3:** Implementasi 5 Lapisan Keamanan (*Defense-in-Depth*):
+    *   *Lapisan 1 (Service Auth):* Header `X-Worker-Secret` (`WORKER_SECRET`) untuk memastikan hanya proxy resmi Next.js yang dapat mengakses worker.
+    *   *Lapisan 2 (Edge Rate Limiting):* Pembatasan laju IP sliding window (`/api/chat`: 30 req/min, `/api/generate`: 10 req/min, `/api/tweak`: 20 req/min).
+    *   *Lapisan 3 (Payload Guard):* Middleware `bodyLimit` maksimal 256KB untuk mencegah eksploitasi memori dan DoS.
+    *   *Lapisan 4 (HTTP Security Headers):* Injeksi header OWASP (`nosniff`, `DENY` frame, `strict-origin-when-cross-origin`, HSTS).
+    *   *Lapisan 5 (Sanitasi & Anti-Injection):* Pembersihan karakter Unicode tersembunyi (zero-width, RTL override) dan pencegahan prompt injection berbasis regex pattern.
+*   **Langkah 4:** Integrasi Next.js Proxy: Konfigurasi `app/next.config.mjs` (rewrites) dan `app/src/middleware.ts` untuk mem-forward header `X-Worker-Secret` secara transparan dari server Next.js ke edge worker tanpa mengubah satu baris pun kode UI di sisi klien.
+*   **Langkah 5:** Pengujian Menyeluruh: Unit test worker (10/10 Vitest), test frontend (223/223), serta pengujian E2E otomatis dengan Playwright mencakup 5 alur pengguna utama (Onboarding, Chip Selection, CoP Generation, Markdown Viewer, Document Tweak).
+*   **Kriteria Selesai:** Seluruh generasi dokumen berjalan di V8 Isolates tanpa risiko timeout (cold start ~0ms), 5 lapisan keamanan aktif, UI tetap stabil dan responsif, dan 100% automated test suite lulus.

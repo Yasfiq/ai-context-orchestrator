@@ -40,18 +40,24 @@ Test harus berada dalam commit yang sama dengan behavior yang diuji agar setiap 
 
 ## Local Verification
 
-Jalankan dari direktori `app`:
+Jalankan pengujian monorepo secara menyeluruh dari root:
 
 ```bash
-npm run typecheck
-npm run test:run
-npm run build
+# Typecheck worker & app
+npm run typecheck:all
+
+# Run all test suites
+npm run test:all
 ```
 
-Atau jalankan seluruhnya:
+Atau jalankan per direktori:
 
 ```bash
-npm run verify
+# Frontend (Next.js)
+cd app && npm run verify
+
+# Backend Edge (Cloudflare Worker)
+cd worker && npm run typecheck && npm test
 ```
 
 ## Pull Requests
@@ -70,7 +76,8 @@ AI review merupakan lapisan tambahan. Test, CI, branch protection, dan penilaian
 
 ## Security
 
-- Jangan commit `.env.local` atau kredensial provider.
+- Jangan commit `.env.local`, `worker/.dev.vars`, atau kredensial provider pihak ketiga.
+- Pastikan `WORKER_SECRET` terkonfigurasi pada `app/.env.local` dan `worker/.dev.vars` / Cloudflare Secrets.
 - Jangan mengirim raw system prompt, stack trace, atau pesan provider kepada client.
-- Jangan menonaktifkan sanitization untuk melewati test.
+- Jangan menonaktifkan sanitization atau rate limiting untuk melewati test.
 - Laporkan kerentanan melalui GitHub Private Vulnerability Reporting, bukan issue publik.

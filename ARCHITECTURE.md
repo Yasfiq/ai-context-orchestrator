@@ -55,5 +55,5 @@ graph TD
 
 ### 4. Data Management & Keamanan
 *   **Zero-Persistence:** Data onboarding dan dokumen hanya hidup pada in-memory Zustand store selama tab aktif. Tidak ada database atau persistence lintas sesi.
-*   **API Key Isolation:** Kunci API LLM hanya disimpan di environment variables sisi server (`.env.local`), menjamin keamanannya dari injeksi front-end.
-*   **Prompt Sanitization:** Input divalidasi dengan ketat sebelum diteruskan ke mesin *Chain of Prompts* untuk meminimalisir Prompt Injection.
+*   **API Key Isolation & Defense-in-Depth:** Kunci API LLM (`OPENAI_API_KEY`) hanya disimpan di environment variables / secrets sisi edge backend (`worker/.dev.vars` atau Cloudflare Secrets), dan diisolasi dari publik melalui autentikasi internal `WORKER_SECRET` pada proxy Next.js (`app/.env.local`). Tidak ada kredensial yang dapat diakses oleh browser.
+*   **Prompt Sanitization & Security Guardrails:** Input divalidasi dan dibersihkan dari karakter Unicode tersembunyi serta pola injeksi sebelum diteruskan ke mesin *Chain of Prompts*. Request juga dibatasi oleh edge rate limiting dan body limit (256KB).

@@ -13,7 +13,7 @@ Dokumen ini memuat aturan mutlak (*hard rules*) untuk pengembangan web app AI Co
 ### 2. ARSITEKTUR & STATE MANAGEMENT
 - **Zustand Absolute Rule:** Seluruh manajemen *state* global (khususnya untuk 8 variabel "Must-Haves") wajib menggunakan **Zustand**. Dilarang menggunakan Redux, MobX, atau React Context API untuk *global state* demi menghindari re-render yang tidak perlu.
 - **Server Components by Default:** Route dan layout tetap Server Components bila tidak membutuhkan state browser. Feature workspace yang memakai Zustand, input, export, atau rendering interaktif dapat menjadi Client Components pada boundary yang jelas.
-- **Isolasi API Key:** Panggilan ke LLM (OpenAI/Anthropic) **WAJIB** dilakukan melalui Next.js Route Handlers (`/app/api/...`). Jangan pernah mengekspos API Key ke komponen klien atau *browser*.
+- **Isolasi API Key & Backend:** Seluruh pemrosesan LLM (OpenAI-compatible) **WAJIB** berada di backend terisolasi (Cloudflare Workers + Hono di `/worker`, di-proxy oleh Next.js dengan service secret `WORKER_SECRET`). Dilarang keras mengekspos API Key pihak ketiga (`OPENAI_API_KEY`) ke klien atau browser.
 
 ### 3. KONVENSI KODE & PENAMAAN (NAMING CONVENTION)
 - **Bahasa:** Wajib menggunakan **TypeScript** (`.ts`, `.tsx`). Jangan gunakan JavaScript murni (`.js`, `.jsx`). Set konfigurasi `strict: true` pada `tsconfig.json`.
