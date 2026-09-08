@@ -76,4 +76,71 @@ describe("GenerationProgress", () => {
 
     vi.unstubAllGlobals();
   });
+
+  it("automatically retries once on transient failure and recovers seamlessly", async () => {
+    let callCount = 0;
+    const fetchMock = vi.fn((_url: string, options?: RequestInit) => {
+      callCount++;
+      const payload = JSON.parse(String(options?.body));
+
+      // Simulate a network failure on the first attempt of PRD
+      if (callCount === 1) {
+        return Promise.reject(new Error("Network connection dropped"));
+      }
+
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            name: payload.documentName,
+            content: `## ${payload.documentName}\n\nRecovered content`,
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        )
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<GenerationProgress />);
+
+    await waitFor(() => {
+      expect(useAppStore.getState().documents).toHaveLength(3);
+    }, { timeout: 4000 });
+
+    // 1 failed + 3 successful attempts = 4 total fetch calls
+    expect(callCount).toBe(4);
+    expect(screen.queryByText("Penyusunan dokumen terhenti")).toBeNull();
+
+    vi.unstubAllGlobals();
+  });
+
+  it("displays smart resume button targeting the failed document when retry limit is reached", async () => {
+    const fetchMock = vi.fn((_url: string, options?: RequestInit) => {
+      const payload = JSON.parse(String(options?.body));
+      if (payload.documentName === "ARCHITECTURE") {
+        return Promise.reject(new Error("Persistent service outage"));
+      }
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            name: payload.documentName,
+            content: `## ${payload.documentName}\n\nContent`,
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        )
+      );
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<GenerationProgress />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Penyusunan dokumen terhenti")).toBeInTheDocument();
+    }, { timeout: 4000 });
+
+    // PRD is completed, ARCHITECTURE failed
+    expect(screen.getByText(/Lanjutkan penyusunan dari Architecture/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 dari 3 dokumen telah aman tersimpan/i)).toBeInTheDocument();
+
+    vi.unstubAllGlobals();
+  });
 });
