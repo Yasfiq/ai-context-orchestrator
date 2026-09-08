@@ -51,9 +51,24 @@ function isValidDoc(content?: string): boolean {
 }
 
 /**
+ * Condenses reference documents to eliminate redundant empty lines and spaces
+ * while keeping essential context within a compact token footprint.
+ */
+export function condenseReferenceContent(
+  content: string,
+  maxLength: number = 1800
+): string {
+  if (!content) return "";
+  const compacted = content
+    .replace(/\r\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+  return sanitizeText(compacted, maxLength);
+}
+
+/**
  * Renders reference blocks for every dependency of a document.
- * Kept byte-identical to the previous per-builder hardcoding: each
- * dependency renders as "\n## REFERENCE: <LABEL>\n<content>\n".
+ * Dependencies render as "\n## REFERENCE: <LABEL>\n<content>\n".
  */
 function buildReferences(
   documentName: DocumentName,
@@ -72,7 +87,7 @@ function buildReferences(
     .map((dep) => {
       const depContent = previousDocuments[dep];
       if (!isValidDoc(depContent)) return "";
-      return `\n## REFERENCE: ${dep}\n${sanitizeText(depContent, 2000)}\n`;
+      return `\n## REFERENCE: ${dep}\n${condenseReferenceContent(depContent, 1800)}\n`;
     })
     .join("\n");
 }
