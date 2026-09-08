@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { ChatBubble } from "@/components/features/ChatBubble";
 import type { ChatMessage } from "@/types/schema";
 
@@ -141,5 +141,29 @@ describe("ChatBubble", () => {
     };
     render(<ChatBubble message={message} />);
     expect(screen.getByText(longContent)).toBeTruthy();
+  });
+
+  it("renders inline retry button when message is an error and triggers onRetry", () => {
+    const onRetryMock = vi.fn();
+    const errorMessage: ChatMessage = {
+      id: "msg-err",
+      role: "assistant",
+      content: "Koneksi terputus. Silakan coba kembali.",
+      timestamp: baseTimestamp,
+      isError: true,
+      failedContent: "Kebutuhan proyek saya adalah marketplace buku",
+    };
+
+    render(<ChatBubble message={errorMessage} onRetry={onRetryMock} />);
+
+    expect(screen.getByText("Sistem / Kesalahan")).toBeTruthy();
+    const retryBtn = screen.getByRole("button", { name: "Coba kirim ulang pesan ini" });
+    expect(retryBtn).toBeTruthy();
+
+    fireEvent.click(retryBtn);
+    expect(onRetryMock).toHaveBeenCalledWith(
+      "Kebutuhan proyek saya adalah marketplace buku",
+      "msg-err"
+    );
   });
 });

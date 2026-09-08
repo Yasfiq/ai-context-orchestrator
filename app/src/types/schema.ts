@@ -160,6 +160,8 @@ export interface ChatMessage {
   role: MessageRole;
   content: string;
   timestamp: number;
+  isError?: boolean;
+  failedContent?: string;
 }
 
 /** Names of the 7 generated documents */
