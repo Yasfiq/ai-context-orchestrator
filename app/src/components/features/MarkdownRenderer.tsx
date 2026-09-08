@@ -6,6 +6,90 @@ import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
 import { normalizeMermaidMarkdown } from "@/lib/mermaid-markdown";
 import { MermaidDiagram } from "./MermaidDiagram";
+import { Check, Copy } from "lucide-react";
+
+function extractTextContent(node: React.ReactNode): string {
+  if (typeof node === "string") return node;
+  if (typeof node === "number") return String(node);
+  if (!node) return "";
+  if (Array.isArray(node)) return node.map(extractTextContent).join("");
+  if (React.isValidElement(node)) {
+    return extractTextContent((node.props as { children?: React.ReactNode }).children);
+  }
+  return "";
+}
+
+function CodeBlock({
+  children,
+  isChat,
+}: {
+  children: React.ReactNode;
+  isChat: boolean;
+}) {
+  const [copied, setCopied] = React.useState(false);
+
+  const child = React.Children.toArray(children)[0];
+  let language = "";
+  let rawCode = "";
+
+  if (React.isValidElement<{ className?: string; children?: React.ReactNode }>(child)) {
+    language = /language-([^\s]+)/.exec(child.props.className || "")?.[1] || "";
+    if (language === "mermaid") {
+      return <MermaidDiagram source={extractTextContent(child.props.children).trim()} />;
+    }
+    rawCode = extractTextContent(child.props.children);
+  } else {
+    rawCode = extractTextContent(children);
+  }
+
+  const handleCopy = async () => {
+    if (!rawCode) return;
+    try {
+      await navigator.clipboard.writeText(rawCode.replace(/\n$/, ""));
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard access may be unavailable in restricted environments.
+    }
+  };
+
+  return (
+    <div
+      className={cn(
+        "group relative overflow-hidden border border-border bg-[#0d1114]",
+        isChat ? "my-3" : "my-6"
+      )}
+      data-testid="code-block"
+    >
+      <div className="flex items-center justify-between border-b border-border/70 bg-[#121619] px-4 py-1.5 text-xs">
+        <span className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+          {language || "code"}
+        </span>
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="inline-flex items-center gap-1.5 font-mono text-[11px] text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+          aria-label={copied ? "Kode disalin" : "Salin kode"}
+        >
+          {copied ? (
+            <>
+              <Check className="h-3.5 w-3.5 text-emerald-400" aria-hidden="true" />
+              <span className="text-emerald-400">Disalin</span>
+            </>
+          ) : (
+            <>
+              <Copy className="h-3.5 w-3.5" aria-hidden="true" />
+              <span>Salin</span>
+            </>
+          )}
+        </button>
+      </div>
+      <pre className="overflow-x-auto p-4 font-mono text-xs leading-6 text-foreground/90">
+        {children}
+      </pre>
+    </div>
+  );
+}
 
 interface MarkdownRendererProps {
   content: string;
@@ -72,7 +156,7 @@ export function MarkdownRenderer({
             return (
               <code
                 className={cn(
-                  "block min-w-max bg-transparent p-5 font-mono text-xs leading-6 text-foreground/90",
+                  "block min-w-max bg-transparent font-mono text-xs leading-6 text-foreground/90",
                   codeClassName
                 )}
                 {...props}
@@ -82,19 +166,7 @@ export function MarkdownRenderer({
             );
           },
           pre: ({ children }) => {
-            const child = React.Children.toArray(children)[0];
-            if (React.isValidElement<{ className?: string; children?: React.ReactNode }>(child)) {
-              const language = /language-([^\s]+)/.exec(child.props.className || "")?.[1];
-              if (language === "mermaid") {
-                return <MermaidDiagram source={String(child.props.children).trim()} />;
-              }
-            }
-
-            return (
-              <pre className={cn("overflow-x-auto border-y border-border bg-[#0d1114]", isChat ? "mb-3" : "mb-6")}>
-                {children}
-              </pre>
-            );
+            return <CodeBlock isChat={isChat}>{children}</CodeBlock>;
           },
           blockquote: ({ children }) => (
             <blockquote className="mb-6 border-l-2 border-primary bg-primary/[0.035] px-5 py-4 text-sm leading-7 text-muted-foreground [&>p]:mb-0">

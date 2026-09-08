@@ -130,9 +130,11 @@ describe("export utilities", () => {
       expect(html).toContain("Title</h2>");
       expect(html).toContain("<pre");
       expect(html).toContain("<code");
+      expect(html).toContain("break-inside:avoid");
+      expect(html).toContain("page-break-inside:avoid");
     });
 
-    it("should convert markdown tables to HTML tables", () => {
+    it("should convert markdown tables to HTML tables with avoid break rules", () => {
       const md = "| Col1 | Col2 |\n|---|---|\n| Val1 | Val2 |";
       const html = markdownToSimpleHtml(md);
 
@@ -141,6 +143,7 @@ describe("export utilities", () => {
       expect(html).toContain("Col1</th>");
       expect(html).toContain("<td");
       expect(html).toContain("Val1</td>");
+      expect(html).toContain("<tr style='break-inside:avoid;page-break-inside:avoid;'>");
     });
 
     it("should escape raw HTML before PDF rendering", () => {
