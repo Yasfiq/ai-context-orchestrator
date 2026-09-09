@@ -10,7 +10,10 @@ import { MATURITY_RUBRICS } from "./onboarding-rubrics";
 
 export { MATURITY_RUBRICS } from "./onboarding-rubrics";
 export { resolveSessionLanguage } from "./onboarding-language";
-export { parseOnboardingResponse } from "./onboarding-parser";
+export {
+  getDefaultSuggestions,
+  parseOnboardingResponse,
+} from "./onboarding-parser";
 export { createTechStackGuidance } from "./onboarding-tech-stack";
 
 export function normalizeDiscoveryState(
