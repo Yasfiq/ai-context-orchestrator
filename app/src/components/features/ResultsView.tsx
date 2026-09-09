@@ -3,7 +3,9 @@
 import * as React from "react";
 import {
   Archive,
+  Check,
   ChevronDown,
+  Copy,
   Download,
   FileDown,
   History,
@@ -51,6 +53,7 @@ export function ResultsView() {
   } = useAppStore();
 
   const [isRegenerating, setIsRegenerating] = React.useState(false);
+  const [isCopied, setIsCopied] = React.useState(false);
   const documentScrollRef = React.useRef<HTMLDivElement>(null);
   const [toast, setToast] = React.useState<ToastState>({
     message: "",
@@ -68,6 +71,21 @@ export function ResultsView() {
 
   const showToast = (message: string, type: ToastState["type"]) => {
     setToast({ message, type, visible: true });
+  };
+
+  const handleCopyDocument = async () => {
+    if (!activeDocument) return;
+    try {
+      await navigator.clipboard.writeText(activeDocument.content);
+      setIsCopied(true);
+      showToast(
+        `Konten ${DOCUMENT_LABELS[activeDocumentTab]} disalin ke clipboard.`,
+        "success"
+      );
+      window.setTimeout(() => setIsCopied(false), 2000);
+    } catch {
+      showToast("Gagal menyalin dokumen ke clipboard.", "error");
+    }
   };
 
   const handleDownloadMd = () => {
@@ -287,6 +305,25 @@ export function ResultsView() {
                   >
                     <RefreshCw className={`h-4 w-4 ${isRegenerating ? "animate-spin" : ""}`} aria-hidden="true" />
                     {isRegenerating ? "Menyusun..." : UI_COPY.results.regenerate}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCopyDocument}
+                    aria-label={`Salin dokumen ${DOCUMENT_LABELS[activeDocumentTab]}`}
+                    title={`Salin markdown ${DOCUMENT_LABELS[activeDocumentTab]}`}
+                  >
+                    {isCopied ? (
+                      <>
+                        <Check className="h-4 w-4 text-emerald-400" aria-hidden="true" />
+                        <span className="text-emerald-400">Tersalin</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-4 w-4" aria-hidden="true" />
+                        <span>Salin</span>
+                      </>
+                    )}
                   </Button>
                   <Button variant="outline" size="sm" onClick={handleDownloadMd} aria-label="Unduh Markdown">
                     <FileDown className="h-4 w-4" aria-hidden="true" />

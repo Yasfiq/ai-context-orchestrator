@@ -116,9 +116,9 @@ export async function markdownToPdfHtml(markdown: string): Promise<string> {
         `mermaid-pdf-${Date.now()}-${index}`,
         source
       );
-      replacement = `<div style="margin:16px 0;padding:12px;border:1px solid #cbd5e1;border-radius:8px;background:#121619;page-break-inside:avoid;overflow:hidden;">${svg}</div>`;
+      replacement = `<div style="margin:16px 0;padding:12px;border:1px solid #cbd5e1;border-radius:8px;background:#121619;break-inside:avoid;page-break-inside:avoid;overflow:hidden;">${svg}</div>`;
     } catch {
-      replacement = `<div style="margin:16px 0;page-break-inside:avoid;"><p style="color:#b45309;font-weight:600;">Diagram belum dapat ditampilkan. Kode Mermaid:</p><pre style="background:#f8fafc;border:1px solid #e2e8f0;padding:12px;font-family:monospace;font-size:10px;line-height:1.4;white-space:pre-wrap;word-break:break-word;"><code>${escapeHtml(source)}</code></pre></div>`;
+      replacement = `<div style="margin:16px 0;break-inside:avoid;page-break-inside:avoid;"><p style="color:#b45309;font-weight:600;">Diagram belum dapat ditampilkan. Kode Mermaid:</p><pre style="background:#f8fafc;border:1px solid #e2e8f0;padding:12px;font-family:monospace;font-size:10px;line-height:1.4;white-space:pre-wrap;word-break:break-word;break-inside:avoid;page-break-inside:avoid;"><code>${escapeHtml(source)}</code></pre></div>`;
     }
 
     html = html.replace(`MERMAID_DIAGRAM_${index}_PLACEHOLDER`, replacement);
@@ -142,7 +142,7 @@ export function markdownToSimpleHtml(markdown: string): string {
 
   // Code blocks (multi-line)
   html = html.replace(/```(?:[a-zA-Z0-9_-]+)?\n([\s\S]*?)```/g, (_match, code) => {
-    return `<pre style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px;margin:12px 0;font-family:monospace;font-size:10px;line-height:1.4;white-space:pre-wrap;word-break:break-all;page-break-inside:avoid;"><code>${code}</code></pre>`;
+    return `<pre style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:12px;margin:12px 0;font-family:monospace;font-size:10px;line-height:1.4;white-space:pre-wrap;word-break:break-all;break-inside:avoid;page-break-inside:avoid;"><code>${code}</code></pre>`;
   });
 
   // Tables
@@ -152,7 +152,7 @@ export function markdownToSimpleHtml(markdown: string): string {
       const rows = tableMatch.trim().split("\n");
       if (rows.length < 2) return tableMatch;
 
-      let tableHtml = `<table style="width:100%;border-collapse:collapse;margin:14px 0;font-size:10.5px;page-break-inside:avoid;">`;
+      let tableHtml = `<table style="width:100%;border-collapse:collapse;margin:14px 0;font-size:10.5px;break-inside:avoid;page-break-inside:avoid;">`;
       rows.forEach((row, idx) => {
         const cells = row
           .split("|")
@@ -168,7 +168,7 @@ export function markdownToSimpleHtml(markdown: string): string {
           ? "background:#f1f5f9;font-weight:600;text-align:left;border:1px solid #cbd5e1;padding:6px 10px;"
           : "border:1px solid #e2e8f0;padding:6px 10px;";
 
-        tableHtml += "<tr>";
+        tableHtml += "<tr style='break-inside:avoid;page-break-inside:avoid;'>";
         cells.forEach((cell) => {
           tableHtml += `<${tag} style="${bgStyle}">${cell}</${tag}>`;
         });
@@ -180,14 +180,14 @@ export function markdownToSimpleHtml(markdown: string): string {
   );
 
   // Blockquotes
-  html = html.replace(/^>\s*(.*$)/gm, "<blockquote style='border-left:3px solid #4338ca;margin:10px 0;padding:6px 12px;color:#475569;background:#f8fafc;font-style:italic;'>$1</blockquote>");
+  html = html.replace(/^>\s*(.*$)/gm, "<blockquote style='border-left:3px solid #4338ca;margin:10px 0;padding:6px 12px;color:#475569;background:#f8fafc;font-style:italic;break-inside:avoid;page-break-inside:avoid;'>$1</blockquote>");
 
   // Headings with page-break avoidance
   html = html
-    .replace(/^#### (.*$)/gm, "<h4 style='font-size:12px;font-weight:600;color:#1e293b;margin:14px 0 6px;page-break-after:avoid;'>$1</h4>")
-    .replace(/^### (.*$)/gm, "<h3 style='font-size:13.5px;font-weight:600;color:#1e293b;margin:16px 0 6px;page-break-after:avoid;'>$1</h3>")
-    .replace(/^## (.*$)/gm, "<h2 style='font-size:15px;font-weight:700;color:#0f172a;margin:20px 0 8px;border-bottom:1px solid #e2e8f0;padding-bottom:4px;page-break-after:avoid;'>$1</h2>")
-    .replace(/^# (.*$)/gm, "<h1 style='font-size:18px;font-weight:800;color:#0f172a;margin:24px 0 10px;border-bottom:2px solid #cbd5e1;padding-bottom:6px;page-break-after:avoid;'>$1</h1>");
+    .replace(/^#### (.*$)/gm, "<h4 style='font-size:12px;font-weight:600;color:#1e293b;margin:14px 0 6px;break-after:avoid;page-break-after:avoid;'>$1</h4>")
+    .replace(/^### (.*$)/gm, "<h3 style='font-size:13.5px;font-weight:600;color:#1e293b;margin:16px 0 6px;break-after:avoid;page-break-after:avoid;'>$1</h3>")
+    .replace(/^## (.*$)/gm, "<h2 style='font-size:15px;font-weight:700;color:#0f172a;margin:20px 0 8px;border-bottom:1px solid #e2e8f0;padding-bottom:4px;break-after:avoid;page-break-after:avoid;'>$1</h2>")
+    .replace(/^# (.*$)/gm, "<h1 style='font-size:18px;font-weight:800;color:#0f172a;margin:24px 0 10px;border-bottom:2px solid #cbd5e1;padding-bottom:6px;break-after:avoid;page-break-after:avoid;'>$1</h1>");
 
   // Inline formatting
   html = html
