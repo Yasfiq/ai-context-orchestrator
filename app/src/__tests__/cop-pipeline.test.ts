@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildCopPrompt } from "@/prompts/cop-pipeline";
+import { buildCopPrompt, condenseReferenceContent } from "@/prompts/cop-pipeline";
 import type { MustHavesState, DocumentName } from "@/types/schema";
 import { COP_GENERATION_ORDER } from "@/types/schema";
 
@@ -127,6 +127,18 @@ describe("buildCopPrompt", () => {
         expect(prompt).toContain("API keys");
         expect(prompt).toContain("NEVER");
       }
+    });
+  });
+
+  describe("condenseReferenceContent", () => {
+    it("compacts excessive line breaks and limits character length", () => {
+      const raw = "Paragraph 1\n\n\n\nParagraph 2\n\n\n\nParagraph 3";
+      const result = condenseReferenceContent(raw, 100);
+      expect(result).toBe("Paragraph 1\n\nParagraph 2\n\nParagraph 3");
+    });
+
+    it("handles empty content gracefully", () => {
+      expect(condenseReferenceContent("")).toBe("");
     });
   });
 });

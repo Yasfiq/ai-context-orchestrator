@@ -163,7 +163,10 @@ chatRoute.post("/", async (c) => {
       responseChars: responseText.length,
     });
 
-    return c.json(response);
+    return c.json(response, 200, {
+      "Server-Timing": `dur=${Date.now() - startedAt}`,
+      "Cache-Control": "no-transform",
+    });
   } catch (error) {
     logger.error("[/api/chat] failed", {
       model: chatModelName,

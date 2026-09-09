@@ -129,7 +129,8 @@ generateRoute.post("/", async (c) => {
 
     return c.newResponse(stream, 200, {
       "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
+      "Cache-Control": "no-cache, no-transform",
+      "X-Accel-Buffering": "no",
       Connection: "keep-alive",
     });
   } catch (error) {
@@ -211,10 +212,17 @@ generateRoute.post("/single", async (c) => {
       outputChars: validated.content.length,
     });
 
-    return c.json({
-      name: documentName,
-      content: validated.content,
-    });
+    return c.json(
+      {
+        name: documentName,
+        content: validated.content,
+      },
+      200,
+      {
+        "Server-Timing": `dur=${Date.now() - startedAt}`,
+        "Cache-Control": "no-transform",
+      }
+    );
   } catch (error) {
     logger.error("[/api/generate/single] failed", {
       model: documentModelName,
