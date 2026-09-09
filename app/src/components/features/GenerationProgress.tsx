@@ -39,9 +39,16 @@ export function GenerationProgress() {
   } = useAppStore();
 
   const [error, setError] = React.useState<string | null>(null);
+  const [docDurations, setDocDurations] = React.useState<Partial<Record<DocumentName, number>>>({});
+  const [activeDocElapsed, setActiveDocElapsed] = React.useState(0);
+  const [totalElapsed, setTotalElapsed] = React.useState(0);
+  const [failedDoc, setFailedDoc] = React.useState<DocumentName | null>(null);
+
   const startedRef = React.useRef(false);
   const furthestProgressIndexRef = React.useRef(-1);
   const activeControllerRef = React.useRef<AbortController | null>(null);
+  const totalStartTimeRef = React.useRef<number | null>(null);
+  const activeDocStartTimeRef = React.useRef<number | null>(null);
 
   const totalDocs = COP_GENERATION_ORDER.length;
   const completedCount = COP_GENERATION_ORDER.filter(
@@ -49,6 +56,32 @@ export function GenerationProgress() {
   ).length;
   const isComplete = completedCount === totalDocs;
   const progressPercent = Math.round((completedCount / totalDocs) * 100);
+
+  // Live timer tick for active document and total generation
+  React.useEffect(() => {
+    if (generationStatus !== "generating") return;
+
+    const intervalId = window.setInterval(() => {
+      if (activeDocStartTimeRef.current) {
+        const elapsed = Math.max(
+          0,
+          Math.floor((Date.now() - activeDocStartTimeRef.current) / 1000)
+        );
+        setActiveDocElapsed(elapsed);
+      }
+      if (totalStartTimeRef.current) {
+        const total = Math.max(
+          0,
+          Math.floor((Date.now() - totalStartTimeRef.current) / 1000)
+        );
+        setTotalElapsed(total);
+      }
+    }, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [generationStatus]);
 
   React.useEffect(() => {
     let disposed = false;
@@ -71,8 +104,12 @@ export function GenerationProgress() {
     beginGenerationRun(runId);
     setGenerationStatus("generating");
     setError(null);
+    setFailedDoc(null);
     setCurrentGeneratingDoc(null);
     furthestProgressIndexRef.current = -1;
+    if (!totalStartTimeRef.current) {
+      totalStartTimeRef.current = Date.now();
+    }
 
     try {
       const storedDocuments = useAppStore.getState().documents;
@@ -98,71 +135,105 @@ export function GenerationProgress() {
           setCurrentGeneratingDoc(docName);
         }
         setDocumentProgress(docName, "generating", runId);
+        activeDocStartTimeRef.current = Date.now();
+        setActiveDocElapsed(0);
 
         const previousDocuments = Object.fromEntries(
           generatedDocs.map((doc) => [doc.name, doc.content])
         );
-        const controller = new AbortController();
-        activeControllerRef.current = controller;
-        const timeoutId = window.setTimeout(() => controller.abort(), 115_000);
 
-        try {
-          const response = await fetch("/api/generate/single", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              documentName: docName,
-              mustHaves,
-              previousDocuments,
-            }),
-            signal: controller.signal,
-          });
+        // Resilient fetch with 1 automatic retry on transient error
+        let data: { content?: string; error?: string } | null = null;
+        const maxAttempts = 2;
 
-          const data = (await response.json().catch(() => null)) as {
-            content?: string;
-            error?: string;
-          } | null;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+          const controller = new AbortController();
+          activeControllerRef.current = controller;
+          const timeoutId = window.setTimeout(() => controller.abort(), 115_000);
 
-          if (!response.ok || !data?.content?.trim()) {
-            throw new Error(
-              data?.error || `${DOCUMENT_LABELS[docName]} belum dapat disusun.`
-            );
-          }
+          try {
+            const response = await fetch("/api/generate/single", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                documentName: docName,
+                mustHaves,
+                previousDocuments,
+              }),
+              signal: controller.signal,
+            });
 
-          if (useAppStore.getState().generationRunId !== runId) return;
+            data = (await response.json().catch(() => null)) as {
+              content?: string;
+              error?: string;
+            } | null;
 
-          const generatedDocument = {
-            name: docName,
-            filename: DOCUMENT_FILENAMES[docName],
-            content: data.content,
-            generatedAt: Date.now(),
-          } satisfies GeneratedDocument;
-          const existingIndex = generatedDocs.findIndex(
-            (doc) => doc.name === docName
-          );
-          if (existingIndex >= 0) {
-            generatedDocs[existingIndex] = generatedDocument;
-          } else {
-            generatedDocs.push(generatedDocument);
-          }
-
-          const orderedDocs = COP_GENERATION_ORDER.map((name) =>
-            generatedDocs.find((doc) => doc.name === name)
-          ).filter(Boolean) as GeneratedDocument[];
-
-          // Persist every completed step so a retry resumes from the failed document.
-          setDocuments(orderedDocs);
-          setDocumentProgress(docName, "completed", runId);
-        } finally {
-          window.clearTimeout(timeoutId);
-          if (activeControllerRef.current === controller) {
-            activeControllerRef.current = null;
+            if (!response.ok || !data?.content?.trim()) {
+              throw new Error(
+                data?.error || `${DOCUMENT_LABELS[docName]} belum dapat disusun.`
+              );
+            }
+            break;
+          } catch (attemptErr) {
+            if (attempt >= maxAttempts) {
+              throw attemptErr;
+            }
+            // Brief backoff before automatic retry
+            await new Promise((resolve) => window.setTimeout(resolve, 1000));
+          } finally {
+            window.clearTimeout(timeoutId);
+            if (activeControllerRef.current === controller) {
+              activeControllerRef.current = null;
+            }
           }
         }
+
+        if (useAppStore.getState().generationRunId !== runId) return;
+
+        const durationSec = Math.max(
+          1,
+          Math.round(
+            (Date.now() - (activeDocStartTimeRef.current || Date.now())) / 1000
+          )
+        );
+        setDocDurations((prev) => ({ ...prev, [docName]: durationSec }));
+        activeDocStartTimeRef.current = null;
+
+        const generatedDocument = {
+          name: docName,
+          filename: DOCUMENT_FILENAMES[docName],
+          content: data!.content!,
+          generatedAt: Date.now(),
+        } satisfies GeneratedDocument;
+
+        const existingIndex = generatedDocs.findIndex(
+          (doc) => doc.name === docName
+        );
+        if (existingIndex >= 0) {
+          generatedDocs[existingIndex] = generatedDocument;
+        } else {
+          generatedDocs.push(generatedDocument);
+        }
+
+        const orderedDocs = COP_GENERATION_ORDER.map((name) =>
+          generatedDocs.find((doc) => doc.name === name)
+        ).filter(Boolean) as GeneratedDocument[];
+
+        // Persist every completed step so a retry resumes from the failed document.
+        setDocuments(orderedDocs);
+        setDocumentProgress(docName, "completed", runId);
       }
 
       if (generatedDocs.length !== totalDocs) {
         throw new Error("Penyusunan berhenti sebelum seluruh dokumen selesai.");
+      }
+
+      if (totalStartTimeRef.current) {
+        const finalTotal = Math.max(
+          1,
+          Math.round((Date.now() - totalStartTimeRef.current) / 1000)
+        );
+        setTotalElapsed(finalTotal);
       }
 
       setGenerationStatus("completed");
@@ -175,7 +246,10 @@ export function GenerationProgress() {
       }, 800);
     } catch (err) {
       const activeDoc = useAppStore.getState().currentGeneratingDoc;
-      if (activeDoc) setDocumentProgress(activeDoc, "error", runId);
+      if (activeDoc) {
+        setDocumentProgress(activeDoc, "error", runId);
+        setFailedDoc(activeDoc);
+      }
       setGenerationStatus("error");
       setCurrentGeneratingDoc(null);
       setError(getAsyncFailureMessage(err, "generation"));
@@ -183,9 +257,9 @@ export function GenerationProgress() {
   };
 
   const statusText = isComplete
-    ? UI_COPY.generation.complete
+    ? `${UI_COPY.generation.complete}${totalElapsed > 0 ? ` (${totalElapsed}s)` : ""}`
     : currentGeneratingDoc
-      ? `Menyusun ${DOCUMENT_LABELS[currentGeneratingDoc]}...`
+      ? `Menyusun ${DOCUMENT_LABELS[currentGeneratingDoc]}... (${activeDocElapsed}s)`
       : UI_COPY.generation.preparing;
 
   return (
@@ -271,7 +345,15 @@ export function GenerationProgress() {
                 </div>
                 <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
                   <span className="hidden sm:inline">
-                    {isCompleted ? "Selesai" : isCurrent ? "Diproses" : isError ? "Gagal" : isStale ? "Perlu disusun ulang" : "Menunggu"}
+                    {isCompleted
+                      ? `Selesai ${docDurations[docName] ? `(${docDurations[docName]}s)` : ""}`
+                      : isCurrent
+                        ? `Diproses (${activeDocElapsed}s)`
+                        : isError
+                          ? "Gagal"
+                          : isStale
+                            ? "Perlu disusun ulang"
+                            : "Menunggu"}
                   </span>
                   <StatusIcon
                     className={cn(
@@ -296,6 +378,11 @@ export function GenerationProgress() {
               <div>
                 <p className="font-semibold">Penyusunan dokumen terhenti</p>
                 <p className="mt-2 break-words text-xs leading-relaxed text-muted-foreground">{error}</p>
+                {completedCount > 0 && (
+                  <p className="mt-2 font-mono text-xs text-muted-foreground">
+                    ✓ {completedCount} dari {totalDocs} dokumen telah aman tersimpan.
+                  </p>
+                )}
               </div>
             </div>
             <Button
@@ -307,7 +394,9 @@ export function GenerationProgress() {
               variant="outline"
             >
               <RefreshCw className="h-4 w-4" aria-hidden="true" />
-              {UI_COPY.generation.retry}
+              {failedDoc
+                ? `Lanjutkan penyusunan dari ${DOCUMENT_LABELS[failedDoc]}`
+                : UI_COPY.generation.retry}
             </Button>
           </div>
         )}
@@ -316,7 +405,7 @@ export function GenerationProgress() {
           <div className="mt-8 flex items-center justify-between border-y border-success/40 bg-success/[0.035] px-4 py-4 animate-fade-in" role="status">
             <span className="flex items-center gap-3 text-sm font-medium text-success">
               <FileText className="h-4 w-4" aria-hidden="true" />
-              {UI_COPY.generation.complete}
+              {UI_COPY.generation.complete} {totalElapsed > 0 ? `(${totalElapsed}s)` : ""}
             </span>
             <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
               {UI_COPY.generation.redirecting}
