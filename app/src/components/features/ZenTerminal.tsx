@@ -10,7 +10,7 @@ import { OnboardingReview } from "./OnboardingReview";
 import { ScrollArea } from "@/components/ui/ScrollArea";
 import { Button } from "@/components/ui/Button";
 import { generateId } from "@/lib/utils";
-import { ArrowRight, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import { ArrowDown, ArrowRight, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { UI_COPY } from "@/lib/ui-copy";
 import {
   useOnboardingChat,
@@ -31,11 +31,11 @@ export function ZenTerminal() {
     setPhase,
   } = useAppStore();
 
-  const { isLoading, sendMessage } = useOnboardingChat();
+  const { isLoading, sendMessage, retryMessage } = useOnboardingChat();
   useWelcomeMessage(UI_COPY.onboarding.welcome);
 
   const [showSidebar, setShowSidebar] = React.useState(true);
-  const messagesEndRef = useTranscriptView(
+  const { messagesEndRef, isScrolledUp, scrollToBottom } = useTranscriptView(
     [messages, isLoading],
     sessionLanguage
   );
@@ -120,11 +120,31 @@ export function ZenTerminal() {
 
             <div className="space-y-7">
               {messages.map((message) => (
-                <ChatBubble key={message.id} message={message} />
+                <ChatBubble
+                  key={message.id}
+                  message={message}
+                  onRetry={(failedContent, messageId) =>
+                    void retryMessage(failedContent, messageId)
+                  }
+                />
               ))}
               {isLoading && <TypingIndicator />}
               <div ref={messagesEndRef} />
             </div>
+
+            {isScrolledUp && (
+              <div className="sticky bottom-4 z-20 flex justify-center pointer-events-none">
+                <button
+                  type="button"
+                  onClick={() => scrollToBottom("smooth")}
+                  className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full border border-border bg-surface/95 px-3.5 py-1.5 font-mono text-xs text-foreground shadow-lg backdrop-blur transition-all hover:bg-surface hover:text-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                  aria-label="Scroll ke pesan terbaru"
+                >
+                  <ArrowDown className="h-3.5 w-3.5 text-indigo-400" aria-hidden="true" />
+                  <span>Pesan terbaru</span>
+                </button>
+              </div>
+            )}
 
             {isOnboardingComplete && !onboardingConfirmed && (
               <div className="mt-8">

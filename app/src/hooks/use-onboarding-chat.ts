@@ -100,6 +100,8 @@ export function useOnboardingChat() {
           role: "assistant",
           content: getAsyncFailureMessage(error, "onboarding"),
           timestamp: Date.now(),
+          isError: true,
+          failedContent: sanitized,
         };
         addMessage(errorMessage);
       } finally {
@@ -110,7 +112,17 @@ export function useOnboardingChat() {
     [addMessage, applyOnboardingResponse]
   );
 
-  return { isLoading, sendMessage };
+  const retryMessage = React.useCallback(
+    async (failedContent: string, errorId?: string) => {
+      if (errorId) {
+        useAppStore.getState().removeMessage(errorId);
+      }
+      await sendMessage(failedContent, "manual", false);
+    },
+    [sendMessage]
+  );
+
+  return { isLoading, sendMessage, retryMessage };
 }
 
 /**
@@ -138,17 +150,53 @@ export function useWelcomeMessage(welcomeContent: string) {
 }
 
 /**
- * Keeps the transcript pinned to the latest turn and syncs the document
- * language attribute with the active session language.
+ * Keeps the transcript pinned to the latest turn without interrupting user reading,
+ * and syncs the document language attribute with the active session language.
  */
 export function useTranscriptView(
   dependencies: readonly unknown[],
   sessionLanguage: string
 ) {
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
+  const [isScrolledUp, setIsScrolledUp] = React.useState(false);
+  const isScrolledUpRef = React.useRef(false);
+
+  const scrollToBottom = React.useCallback(
+    (behavior: ScrollBehavior = "smooth") => {
+      messagesEndRef.current?.scrollIntoView({ behavior });
+      setIsScrolledUp(false);
+      isScrolledUpRef.current = false;
+    },
+    []
+  );
 
   React.useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const sentinel = messagesEndRef.current;
+    if (!sentinel) return;
+
+    const scrollContainer =
+      sentinel.closest("[data-radix-scroll-area-viewport]") ||
+      sentinel.parentElement;
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+      const distanceFromBottom = scrollHeight - scrollTop - clientHeight;
+      const scrolledAway = distanceFromBottom > 150;
+      setIsScrolledUp(scrolledAway);
+      isScrolledUpRef.current = scrolledAway;
+    };
+
+    scrollContainer.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      scrollContainer.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    if (!isScrolledUpRef.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, dependencies);
 
@@ -156,5 +204,5 @@ export function useTranscriptView(
     document.documentElement.lang = sessionLanguage;
   }, [sessionLanguage]);
 
-  return messagesEndRef;
+  return { messagesEndRef, isScrolledUp, scrollToBottom };
 }
