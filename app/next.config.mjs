@@ -21,12 +21,14 @@ const nextConfig = {
   async rewrites() {
     const workerApiUrl = process.env.WORKER_API_URL;
     if (workerApiUrl) {
-      return [
-        {
-          source: "/api/:path*",
-          destination: `${workerApiUrl}/api/:path*`,
-        },
-      ];
+      return {
+        beforeFiles: [
+          {
+            source: "/api/:path*",
+            destination: `${workerApiUrl}/api/:path*`,
+          },
+        ],
+      };
     }
     return [];
   },
