@@ -59,6 +59,7 @@ export function ChatInput({
       <div className="mx-auto flex max-w-4xl items-end gap-3 border border-border bg-surface p-2 transition-colors focus-within:border-indigo-400">
         <textarea
           ref={textareaRef}
+          suppressHydrationWarning
           value={value}
           onChange={(event) => setValue(event.target.value)}
           onKeyDown={handleKeyDown}

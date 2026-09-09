@@ -274,3 +274,88 @@ describe("guided tech-stack progression", () => {
     ]);
   });
 });
+
+describe("onboarding parser resilience and suggestion chips", () => {
+  it("recovers plain text conversational responses when LLM omits JSON", () => {
+    const rawLLMResponse =
+      "Tentu! Ide direktori tools AI ini sangat menarik dan potensial. Sebelum kita melangkah lebih jauh, apakah fokusnya untuk pengguna umum atau developer?";
+    const response = parseOnboardingResponse(
+      rawLLMResponse,
+      "projectVision",
+      "id",
+      "Saya ingin membuat web direktori untuk tools AI dengan filter dan pencarian"
+    );
+
+    expect(response.reply).toContain("Ide direktori tools AI ini sangat menarik");
+    expect(response.maturity).toBe("needs_clarification");
+    expect(response.suggestedReplies.length).toBeGreaterThanOrEqual(1);
+    expect(response.suggestedReplies.some((s) => s.recommended)).toBe(true);
+  });
+
+  it("strips think tags and extracts embedded JSON cleanly", () => {
+    const rawLLMResponse = `<think>
+The user wants to build an AI tools directory.
+I should confirm the project vision.
+</think>
+\`\`\`json
+{
+  "reply": "Direktori tools AI merupakan ide yang bagus. Mari kita pastikan fitur utamanya.",
+  "activeVariable": "keyFeatures",
+  "maturity": "draft",
+  "draftValue": "Web direktori tools AI",
+  "suggestedReplies": []
+}
+\`\`\``;
+    const response = parseOnboardingResponse(
+      rawLLMResponse,
+      "keyFeatures",
+      "id",
+      "Saya ingin fitur filter dan bookmark"
+    );
+
+    expect(response.reply).toContain("Direktori tools AI merupakan ide yang bagus");
+    expect(response.reply).not.toContain("<think>");
+    expect(response.reply).not.toContain("The user wants to build");
+    expect(response.activeVariable).toBe("keyFeatures");
+    // Suggested replies should be populated with fallbacks
+    expect(response.suggestedReplies.length).toBeGreaterThanOrEqual(1);
+    expect(response.suggestedReplies.some((s) => s.recommended)).toBe(true);
+  });
+
+  it("recovers truncated JSON with reply regex match", () => {
+    const truncatedJSON = `{"reply": "Saya memahami kebutuhan Anda mengenai direktori AI.", "activeVariable": "projectVision"`;
+    const response = parseOnboardingResponse(
+      truncatedJSON,
+      "projectVision",
+      "id",
+      "Buat web direktori tools AI"
+    );
+
+    expect(response.reply).toBe("Saya memahami kebutuhan Anda mengenai direktori AI.");
+    expect(response.suggestedReplies.length).toBeGreaterThanOrEqual(1);
+    expect(response.suggestedReplies.some((s) => s.recommended)).toBe(true);
+  });
+
+  it("ensures suggestion chips always have a recommended option", () => {
+    const responseWithoutRecommended = JSON.stringify({
+      reply: "Silakan pilih alur berikutnya.",
+      activeVariable: "techStackCore",
+      maturity: "needs_clarification",
+      suggestedReplies: [
+        { label: "Option A", value: "Value A", recommended: false },
+        { label: "Option B", value: "Value B" },
+      ],
+    });
+
+    const response = parseOnboardingResponse(
+      responseWithoutRecommended,
+      "techStackCore",
+      "id",
+      "Stack apa yang bagus?"
+    );
+
+    expect(response.suggestedReplies).toHaveLength(2);
+    expect(response.suggestedReplies.some((s) => s.recommended)).toBe(true);
+  });
+});
+
