@@ -16,6 +16,11 @@ describe("LLM output validation", () => {
     expect(cleanModelOutput(output)).toBe(VALID_DOCUMENT);
   });
 
+  it("strips conversational preamble before the first Markdown heading", () => {
+    const output = `Doc update. Stack change. Output:\n\n${VALID_DOCUMENT}`;
+    expect(cleanModelOutput(output)).toBe(VALID_DOCUMENT);
+  });
+
   it("rejects output that exhausted its token budget", () => {
     expect(() => validateModelDocument(VALID_DOCUMENT, "length")).toThrow(
       "token limit"

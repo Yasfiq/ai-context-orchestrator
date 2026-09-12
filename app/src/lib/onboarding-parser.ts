@@ -19,38 +19,38 @@ export function getDefaultSuggestions(
       return isId
         ? [
             {
-              label: "Katalog & Pencarian",
+              label: "Workflow Bisnis & B2B",
               value:
-                "Aplikasi direktori/katalog terkurasi dengan pencarian cepat dan filter multi-kategori.",
+                "Solusi operasional B2B untuk mengotomasi alur kerja, transaksi, dan verifikasi antar pihak.",
               recommended: true,
             },
             {
-              label: "Kebutuhan Pribadi & Kerja",
+              label: "SaaS Multi-Tenant / Cloud",
               value:
-                "Membantu pengguna menemukan dan membandingkan opsi terbaik untuk kebutuhan harian atau tim.",
+                "Platform SaaS mandiri yang dapat diakses multi-pengguna dengan dashboard dan peran terkelola.",
             },
             {
-              label: "Rekomendasi AI",
+              label: "Portal Solusi Spesifik",
               value:
-                "Rekomendasikan alur utama dan fokus nilai produk berdasarkan konteks yang ada.",
+                "Aplikasi khusus yang memecahkan satu hambatan utama pengguna dengan alur ringkas dan terarah.",
             },
           ]
         : [
             {
-              label: "Directory & Discovery",
+              label: "B2B & Business Workflow",
               value:
-                "A curated directory application with fast search and multi-category filters.",
+                "B2B operational solution automating workflows, transactions, and multi-party verification.",
               recommended: true,
             },
             {
-              label: "Personal & Work Needs",
+              label: "SaaS / Multi-Tenant",
               value:
-                "Help users quickly discover and compare the best options for their workflows.",
+                "Self-serve cloud platform accessible by multiple users with managed dashboards and roles.",
             },
             {
-              label: "AI Recommendation",
+              label: "Specialized Portal",
               value:
-                "Recommend the core workflow and value focus based on existing context.",
+                "Dedicated application solving a single critical user bottleneck with a focused flow.",
             },
           ];
 
@@ -58,38 +58,38 @@ export function getDefaultSuggestions(
       return isId
         ? [
             {
-              label: "Admin & Publik",
+              label: "Role Berlapis (Admin, Operator, User)",
               value:
-                "Admin mengelola dan memverifikasi data; pengguna publik mencari dan melihat detail secara terbuka.",
+                "Pemisahan wewenang yang tegas antara administrator, operator kerja, dan pengguna akhir/klien.",
               recommended: true,
             },
             {
-              label: "Pengguna Terdaftar",
+              label: "Dua Sisi (Pemohon & Penyedia)",
               value:
-                "Pengguna terdaftar dapat menyimpan bookmark, memberi rating, dan menulis ulasan.",
+                "Dua peran utama yang saling berinteraksi dengan alur verifikasi atau transaksi timbal-balik.",
             },
             {
-              label: "Akses Sederhana",
+              label: "Internal Tim Terpadu",
               value:
-                "Tanpa login untuk pencarian dasar; autentikasi hanya diperlukan saat mengelola data.",
+                "Akses terverifikasi untuk seluruh staf internal dengan tingkat izin sesuai departemen.",
             },
           ]
         : [
             {
-              label: "Admin & Public",
+              label: "Layered Roles (Admin, Operator, User)",
               value:
-                "Admin manages and moderates content; public users search and browse freely.",
+                "Strict role boundaries between system admins, operational actors, and end-users/clients.",
               recommended: true,
             },
             {
-              label: "Registered Users",
+              label: "Two-Sided (Requester & Provider)",
               value:
-                "Registered users can bookmark favorites, rate items, and leave reviews.",
+                "Two primary roles interacting through reciprocal verification or transaction workflows.",
             },
             {
-              label: "Simple Access",
+              label: "Unified Internal Team",
               value:
-                "No login required for browsing; authentication only needed for admin operations.",
+                "Authenticated access for internal staff with department-level permission tiers.",
             },
           ];
 
@@ -97,38 +97,38 @@ export function getDefaultSuggestions(
       return isId
         ? [
             {
-              label: "Pencarian & Filter Cerdas",
+              label: "Alur Inti & Otomasi Proses",
               value:
-                "Pencarian cepat, filter berbasis kegunaan/kategori/harga, dan pengurutan popularitas pengguna.",
+                "Otomasi tahapan proses utama dari input awal, verifikasi status, hingga penyelesaian tuntas.",
               recommended: true,
             },
             {
-              label: "Detail & Alternatif Tools",
+              label: "Dashboard & Monitoring Real-time",
               value:
-                "Halaman detail lengkap dengan deskripsi, panduan best practice, dan rekomendasi alternatif.",
+                "Panel pemantauan status real-time, pelacakan riwayat aktivitas, dan notifikasi perubahan.",
             },
             {
-              label: "Review & Bookmark",
+              label: "Pencarian & Laporan Terstruktur",
               value:
-                "Fitur bookmark favorit pengguna dan review/rating komunitas.",
+                "Pencarian cepat, filter status komprehensif, dan ekspor data laporan terstruktur.",
             },
           ]
         : [
             {
-              label: "Search & Multi-Filter",
+              label: "Core Workflow & Automation",
               value:
-                "Fast search, multi-category and price filters, and sorting by user popularity.",
+                "End-to-end automation of the main process from initial input, status checks, to completion.",
               recommended: true,
             },
             {
-              label: "Tool Details & Alternatives",
+              label: "Real-time Dashboard & Tracking",
               value:
-                "Detailed item view with descriptions, best practices, and curated alternatives.",
+                "Real-time status monitoring panel, activity audit tracking, and event change alerts.",
             },
             {
-              label: "Bookmarks & Ratings",
+              label: "Search & Structured Reports",
               value:
-                "User bookmarking and community reviews or popularity metrics.",
+                "Fast search, comprehensive status filters, and structured data report exports.",
             },
           ];
 
@@ -136,38 +136,38 @@ export function getDefaultSuggestions(
       return isId
         ? [
             {
-              label: "Next.js & Cloudflare",
+              label: "Edge Serverless (Next.js + Cloudflare)",
               value:
-                "Next.js frontend modern dengan edge backend Cloudflare Workers/Pages.",
+                "Frontend Next.js App Router dengan backend Cloudflare Workers untuk latensi ultra-rendah.",
               recommended: true,
             },
             {
-              label: "Fullstack React / Node",
+              label: "Fullstack Node.js + PostgreSQL",
               value:
-                "Fullstack React dengan Node.js/TypeScript backend dan PostgreSQL/SQLite.",
+                "Next.js fullstack dengan Node.js runtime dan database relasional PostgreSQL ACID.",
             },
             {
-              label: "Rekomendasi AI",
+              label: "Rekomendasi Arsitektur Terbaik",
               value:
-                "Pilihkan arsitektur stack paling ringan, cepat, dan mudah di-deploy.",
+                "Rekomendasikan arsitektur teknologi paling stabil, scalable, dan sesuai dengan batasan proyek ini.",
             },
           ]
         : [
             {
-              label: "Next.js & Cloudflare",
+              label: "Edge Serverless (Next.js + Cloudflare)",
               value:
-                "Modern Next.js frontend with Cloudflare Workers/Pages edge backend.",
+                "Modern Next.js App Router frontend with Cloudflare Workers backend for ultra-low latency.",
               recommended: true,
             },
             {
-              label: "Fullstack React / Node",
+              label: "Fullstack Node.js + PostgreSQL",
               value:
-                "Fullstack React with Node.js/TypeScript backend and PostgreSQL/SQLite.",
+                "Next.js fullstack with Node.js runtime and relational PostgreSQL database (ACID compliant).",
             },
             {
-              label: "AI Recommendation",
+              label: "Best Architecture Recommendation",
               value:
-                "Recommend the lightest and fastest deployable tech stack.",
+                "Recommend the most stable and scalable tech architecture tailored to this project's constraints.",
             },
           ];
 
@@ -175,38 +175,38 @@ export function getDefaultSuggestions(
       return isId
         ? [
             {
-              label: "Database Relasional & API",
+              label: "REST API & Webhook Asinkron",
               value:
-                "Data direktori disimpan dalam database relasional dengan REST API untuk pencarian dan pemfilteran.",
+                "REST API untuk operasi langsung dan webhook asinkron untuk integrasi event pihak ketiga.",
               recommended: true,
             },
             {
-              label: "Data Terstruktur & Cache",
+              label: "Database Relasional & Audit Log",
               value:
-                "Penyimpanan data terstruktur dengan caching di edge untuk response pencarian instan.",
+                "Penyimpanan data relasional dengan riwayat log transaksi yang tidak dapat diubah (append-only).",
             },
             {
-              label: "Integrasi Eksternal Minimal",
+              label: "Event-Driven Message Queue",
               value:
-                "Fokus pada data internal terlebih dahulu tanpa ketergantungan API pihak ketiga yang kompleks.",
+                "Antrean pesan asinkron untuk memproses transaksi beban tinggi secara andal.",
             },
           ]
         : [
             {
-              label: "Relational DB & API",
+              label: "REST API & Async Webhooks",
               value:
-                "Data stored in relational database with REST APIs for search and filtering.",
+                "REST APIs for direct operations and async webhooks for external third-party events.",
               recommended: true,
             },
             {
-              label: "Structured Data & Cache",
+              label: "Relational DB & Audit Log",
               value:
-                "Cloud storage with edge caching for instant search and query responses.",
+                "Relational data persistence with an immutable append-only transaction audit log.",
             },
             {
-              label: "Minimal External Integrations",
+              label: "Event-Driven Message Queue",
               value:
-                "Focus on internal data first without complex third-party API dependencies.",
+                "Asynchronous message queue to reliably process high-throughput transaction events.",
             },
           ];
 
@@ -214,38 +214,38 @@ export function getDefaultSuggestions(
       return isId
         ? [
             {
-              label: "Unit & E2E Testing",
+              label: "Unit Test & E2E Alur Utama",
               value:
-                "Unit test untuk fungsi pencarian & filter, serta E2E test untuk alur utama pengguna.",
+                "Unit test logika bisnis dan Playwright E2E untuk memvalidasi alur kritis pengguna.",
               recommended: true,
             },
             {
-              label: "Smoke Test Kritis",
+              label: "Integration & Webhook Replay",
               value:
-                "Verifikasi alur kritis (pencarian, navigasi detail, respon filter) sebelum rilis.",
+                "Pengujian integrasi antar modul dan simulasi replay webhook pihak ketiga/perbankan.",
             },
             {
-              label: "Rekomendasi AI",
+              label: "Smoke Test & Type Checking Ketat",
               value:
-                "Rekomendasikan strategi pengujian otomatis yang praktis dan efektif.",
+                "Validasi tipe data TypeScript ketat dan smoke test otomatis pada setiap pipeline CI/CD.",
             },
           ]
         : [
             {
-              label: "Unit & E2E Testing",
+              label: "Unit Tests & Core E2E Flows",
               value:
-                "Unit tests for search and filtering logic, plus E2E tests for core user journeys.",
+                "Business logic unit tests and Playwright E2E tests validating critical user journeys.",
               recommended: true,
             },
             {
-              label: "Critical Flow Smoke",
+              label: "Integration & Webhook Replay",
               value:
-                "Verification of critical user flows (search, details, filtering) prior to release.",
+                "Cross-module integration tests and third-party/banking webhook replay simulation.",
             },
             {
-              label: "AI Recommendation",
+              label: "Smoke Tests & Strict Types",
               value:
-                "Recommend a practical and high-confidence automated QA strategy.",
+                "Strict TypeScript type checking and automated smoke tests on every CI/CD pipeline.",
             },
           ];
 
@@ -253,38 +253,38 @@ export function getDefaultSuggestions(
       return isId
         ? [
             {
-              label: "Standar Keamanan Web",
+              label: "Enkripsi Data & RBAC Ketat",
               value:
-                "Sanitasi input pencarian, proteksi CORS/CSRF, dan rate limiting pada endpoint publik.",
+                "Enkripsi data at-rest & in-transit, otentikasi aman, dan kontrol akses berbasis peran (RBAC).",
               recommended: true,
             },
             {
-              label: "Privasi Data Dasar",
+              label: "Audit Trail & Kepatuhan Regulasi",
               value:
-                "Hanya data publik tanpa PII sensitif, komunikasi selalu melalui HTTPS.",
+                "Pencatatan log transaksi yang tamper-proof sesuai standar regulasi dan privasi data.",
             },
             {
-              label: "Rekomendasi AI",
+              label: "Proteksi API & Sanitasi Input",
               value:
-                "Rekomendasikan baseline keamanan yang sesuai untuk aplikasi direktori publik.",
+                "Rate limiting, validasi skema payload ketat, dan perlindungan terhadap injeksi data.",
             },
           ]
         : [
             {
-              label: "Standard Web Security",
+              label: "Data Encryption & Strict RBAC",
               value:
-                "Input sanitation, CORS/CSRF protection, and rate limiting on public endpoints.",
+                "Data encryption at-rest and in-transit, secure auth, and role-based access control (RBAC).",
               recommended: true,
             },
             {
-              label: "Basic Data Privacy",
+              label: "Audit Trail & Regulatory Compliance",
               value:
-                "Public directory data without sensitive PII, strictly HTTPS encrypted.",
+                "Tamper-proof transaction logging conforming to data privacy and regulatory standards.",
             },
             {
-              label: "AI Recommendation",
+              label: "API Protection & Input Sanitization",
               value:
-                "Recommend essential security practices for this application.",
+                "Rate limiting, strict payload schema validation, and injection vulnerability defense.",
             },
           ];
 
@@ -292,38 +292,38 @@ export function getDefaultSuggestions(
       return isId
         ? [
             {
-              label: "Fullstack Engineer",
+              label: "Frontend, Backend & QA Engineer",
               value:
-                "Satu engineer bertanggung jawab atas UI, API endpoint, dan integrasi database.",
+                "Tim agen spesialis: Frontend UI/UX, Backend Edge/API Engineer, dan QA Automation Tester.",
               recommended: true,
             },
             {
-              label: "Frontend & Backend Terpisah",
+              label: "Arsitek Sistem & Security Officer",
               value:
-                "Pemisahan fokus: Frontend engineer untuk UI/UX pencarian, Backend engineer untuk data & performa.",
+                "Fokus pada peran arsitek teknis sistem, pakar integrasi pihak ketiga, dan auditor keamanan.",
             },
             {
-              label: "Rekomendasi AI",
+              label: "Fullstack Lean Team",
               value:
-                "Rekomendasikan pembagian peran tim teknis yang paling efisien.",
+                "Agen fullstack serbaguna untuk iterasi cepat dengan fokus pengiriman fitur end-to-end.",
             },
           ]
         : [
             {
-              label: "Fullstack Engineer",
+              label: "Frontend, Backend & QA Engineers",
               value:
-                "Single engineer covering frontend UI, API endpoints, and database integration.",
+                "Specialist agents: Frontend UI/UX, Backend Edge/API Engineer, and QA Automation Tester.",
               recommended: true,
             },
             {
-              label: "Frontend & Backend Roles",
+              label: "System Architect & Security Officer",
               value:
-                "Divided roles: Frontend engineer for search UI/UX, Backend engineer for data & performance.",
+                "Focused on technical system architect, third-party integration expert, and security auditor.",
             },
             {
-              label: "AI Recommendation",
+              label: "Fullstack Lean Team",
               value:
-                "Recommend an efficient technical team structure.",
+                "Versatile fullstack agent for rapid iteration and end-to-end feature delivery.",
             },
           ];
 

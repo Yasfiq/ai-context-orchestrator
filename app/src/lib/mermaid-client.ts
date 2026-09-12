@@ -1,4 +1,5 @@
 import type { MermaidConfig } from "mermaid";
+import { sanitizeMermaidSource } from "./mermaid-markdown";
 
 const MERMAID_CONFIG: MermaidConfig = {
   startOnLoad: false,
@@ -55,6 +56,7 @@ export async function renderMermaidSvg(
   source: string
 ): Promise<string> {
   const mermaid = await getMermaid();
-  const { svg } = await mermaid.render(id, source);
+  const sanitized = sanitizeMermaidSource(source);
+  const { svg } = await mermaid.render(id, sanitized);
   return svg;
 }

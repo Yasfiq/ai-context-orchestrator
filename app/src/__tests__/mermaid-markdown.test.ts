@@ -35,5 +35,19 @@ describe("Mermaid Markdown normalization", () => {
     const source = "```ts\nconst graph = 'TD';\n```";
     expect(normalizeMermaidMarkdown(source)).toBe(source);
   });
+
+  it("sanitizes bare flowchart directive and quotes problematic node labels", () => {
+    const raw = "```mermaid\nflowchart\nA[Next.js (App Router)] --> B[Edge API: Workers]\n```";
+    const result = normalizeMermaidMarkdown(raw);
+    expect(result).toContain("flowchart TD");
+    expect(result).toContain('A["Next.js (App Router)"]');
+    expect(result).toContain('B["Edge API: Workers"]');
+  });
+
+  it("recognizes case-insensitive directives like FLOWCHART and STATEDIAGRAM-V2", () => {
+    expect(isMermaidSource("FLOWCHART TD\n  A --> B")).toBe(true);
+    expect(isMermaidSource("stateDiagram-v2\n  [*] --> Active")).toBe(true);
+    expect(isMermaidSource("SEQUENCEDIAGRAM\n  Alice->>Bob: Hi")).toBe(true);
+  });
 });
 
