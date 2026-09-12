@@ -81,7 +81,7 @@ generateRoute.post("/", async (c) => {
             const result = streamText({
               model: universalLLM(documentModelName),
               prompt,
-              maxTokens: 8000,
+              maxTokens: 4000,
               temperature: 0.6,
             });
 
@@ -192,7 +192,7 @@ generateRoute.post("/single", async (c) => {
     const result = streamText({
       model: universalLLM(documentModelName),
       prompt,
-      maxTokens: 8000,
+      maxTokens: 4000,
       temperature: 0.6,
     });
 

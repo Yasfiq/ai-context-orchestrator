@@ -101,24 +101,24 @@ interface DocumentSpec {
 
 const DOCUMENT_SPECS: Record<DocumentName, DocumentSpec> = {
   PRD: {
-    role: "You are a senior product manager creating an exhaustive Product Requirements Document (PRD).",
+    role: "You are a senior product manager creating a production-ready Product Requirements Document (PRD).",
     requirements: `
-Generate an in-depth, production-ready PRD with the following sections:
+Generate a concise, production-ready PRD. Keep explanations dense and focused using tables and structured bullet points (avoid verbose narratives) with the following sections:
 
-1. **Product Vision & Problem Statement** — What specific problem does this product solve? Why does it matter? Include core quantifiable value drivers.
+1. **Product Vision & Problem Statement** — What specific problem does this product solve? Quantifiable value drivers in 1-2 crisp paragraphs.
 2. **Target Users & Permissions Matrix** —
-   - Define 2-3 concrete user personas (Role, core workflows, technical background, pain points).
+   - Define 2 concrete user personas (Role, core workflows, technical background).
    - Provide a User Permissions & Access Control Matrix table detailing permissions per persona.
 3. **Core Features (MVP Scope)** — Detail exactly 3 core MVP features (strict limit of 3 features to maintain sharp MVP focus). For each feature, provide:
    - Feature name and functional description
    - User story: As a [user persona], I want [capability], so that [business value]
-   - 4-5 granular Acceptance Criteria covering normal flows, data validation, and error states
+   - 3-4 granular Acceptance Criteria covering normal flows and error states
    - Include a Mermaid diagram (\`\`\`mermaid flowchart TD or sequenceDiagram) illustrating the core user journey or interaction model.
-4. **Non-Functional Requirements** — Concrete latency targets, throughput, security baselines, and data durability expectations.
-5. **Tech Stack & Architectural Alignment** — High-level technology decisions and rationale connecting directly to the confirmed project context.
-6. **Out of Scope (MVP)** — Explicit list of capabilities postponed to later releases to preserve MVP focus.
-7. **Success Metrics & KPIs** — Measurable leading and lagging indicators for MVP validation.
-8. **Risks, Edge Cases & Mitigation** — Technical, operational, and regulatory risks with concrete mitigation playbooks.
+4. **Non-Functional Requirements** — Concrete latency targets, throughput, security baselines, and data durability in a structured table.
+5. **Tech Stack & Architectural Alignment** — High-level technology decisions and rationale connecting directly to confirmed project context.
+6. **Out of Scope (MVP)** — Explicit list of 4-5 capabilities postponed to later releases to preserve MVP focus.
+7. **Success Metrics & KPIs** — Structured table of measurable leading and lagging indicators for MVP validation.
+8. **Risks, Edge Cases & Mitigation** — Technical and operational risks with concrete mitigation playbooks.
 
 Ensure this document is rigorous, comprehensive, and immediately actionable for engineering teams.`,
   },
