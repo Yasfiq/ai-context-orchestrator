@@ -58,7 +58,7 @@ function isValidDoc(content?: string): boolean {
  */
 export function condenseReferenceContent(
   content: string,
-  maxLength: number = 1800
+  maxLength: number = 1000
 ): string {
   if (!content) return "";
   const compacted = content
@@ -89,7 +89,7 @@ function buildReferences(
     .map((dep) => {
       const depContent = previousDocuments[dep];
       if (!isValidDoc(depContent)) return "";
-      return `\n## REFERENCE: ${dep}\n${condenseReferenceContent(depContent, 1800)}\n`;
+      return `\n## REFERENCE: ${dep}\n${condenseReferenceContent(depContent, 1000)}\n`;
     })
     .join("\n");
 }
@@ -125,45 +125,45 @@ Ensure this document is rigorous, comprehensive, and immediately actionable for 
   ARCHITECTURE: {
     role: "You are a senior software architect designing the system architecture.",
     requirements: `
-Generate an Architecture document with the following sections:
+Generate a concise, production-grade Architecture document. Keep explanations dense and focused using tables and structured bullet points (avoid verbose narratives) with the following sections:
 
-1. **Technology Stack** — List every major technology/library/framework with rationale for each choice in a structured markdown table.
-2. **High-Level System Architecture** — Describe the system components and how they interact. Include a Mermaid diagram using the required \`\`\`mermaid fence if applicable.
-3. **Directory & File Structure** — Provide a detailed folder structure using a code block tree format. Explain the purpose of each major directory.
-4. **Data Flow** — How data moves through the system (user input → processing → output).
-5. **State Management** — How application state is managed, what state exists, and where it lives.
-6. **API Design** — Endpoints, request/response formats, and authentication strategy.
-7. **Security Architecture** — How security is enforced at each layer.
-8. **Deployment Architecture** — How the app will be deployed and scaled.
+1. **Technology Stack** — List every core technology/framework with rationale in a structured markdown table.
+2. **High-Level System Architecture** — Describe the core system components and their interactions. Include exactly one clean Mermaid diagram (\`\`\`mermaid flowchart TD or sequenceDiagram).
+3. **Directory & File Structure** — Provide an essential directory tree in a code block highlighting core folders (keep to 20-30 lines).
+4. **Data Flow** — Concise step-by-step lifecycle of a primary transaction/request.
+5. **State Management** — Client and server state boundaries, stores, and caching strategy.
+6. **API Design** — Define the top 4-6 essential REST/RPC endpoints in a clear markdown table (Method, Endpoint, Description, Auth, Sample Payload).
+7. **Security Architecture** — Key authentication, authorization, and data encryption policies.
+8. **Deployment Architecture** — Hosting, CI/CD pipeline, and scaling model.
 
-Ensure the architecture aligns with the tech stack and features described in the PRD.`,
+Ensure the architecture aligns strictly with the PRD and confirmed tech stack.`,
   },
   AGENTS: {
     role: "You are an expert in AI-assisted development workflows, creating an exhaustive AGENTS.md file.",
     requirements: `
-Generate an exhaustive, production-grade AGENTS.md file defining AI agent personas and orchestration workflows for this project:
+Generate a production-grade AGENTS.md file defining AI agent personas and orchestration workflows for this project. Keep formatting crisp, dense, and structured:
 
-1. **AI Agent Personas** — Define 3-4 specialized agents (covering Frontend, Backend/Data, QA Automation, and relevant Domain Specialist). For each agent, provide:
-   - **Agent Tag & Role:** Unique tag (e.g., @frontend-specialist, @backend-engineer) and specific domain focus.
+1. **AI Agent Personas** — Define 3 specialized agents (e.g., Frontend Specialist, Backend/Data Engineer, QA/Automation Specialist). For each agent, provide:
+   - **Agent Tag & Role:** Unique tag (e.g., @frontend-specialist) and specific domain focus.
    - **Technology Mastery:** Specific frameworks, libraries, and tools this agent specializes in.
-   - **Detailed Technical Responsibilities:** 4-5 bullet points detailing concrete tasks and boundaries.
+   - **Detailed Technical Responsibilities:** 3-4 bullet points detailing concrete tasks and boundaries.
    - **Strict Rules & Constraints:** 2-3 hard constraints and anti-patterns the agent must never violate.
-   - **Standard Interaction & Response Format:** Guidelines on code generation, test output, and explanations.
+   - **Standard Interaction & Response Format:** Brief guidelines on code generation, test output, and explanations.
 
 2. **Agent Collaboration & Orchestration Protocol** —
-   - Include a Mermaid flowchart (\`\`\`mermaid flowchart TD) visualizing how agents hand off tasks.
-   - Coordination rules for feature implementation, code reviews, and schema migrations.
+   - Include a clean Mermaid flowchart (\`\`\`mermaid flowchart TD) visualizing how agents hand off tasks.
+   - Coordination rules for feature implementation and code reviews.
 
 3. **Task Handoff Matrix** —
    - A structured markdown table detailing: Trigger / Request, Sending Agent, Receiving Agent, Required Input Artifacts, Expected Output Artifacts.
 
 4. **Operational Workflows & Runbooks** —
-   - Step-by-step multi-agent execution sequences for: (a) New feature end-to-end implementation, (b) Bug triage and resolution, (c) Schema/API version migration.
+   - Step-by-step multi-agent execution sequences for: (a) New feature end-to-end implementation, (b) Bug triage and resolution.
 
 5. **Quality Gates & Pre-Commit Checklist** —
    - Concrete checklist that QA and Lead agents must verify before approving changes.
 
-Make each persona distinct, actionable, and free from superficial brevity.`,
+Make each persona distinct, actionable, and focused on confirmed project context.`,
   },
 };
 
