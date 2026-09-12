@@ -43,8 +43,8 @@ export function buildOnboardingSystemPrompt(
     : "None";
   const visibleLanguage =
     language === "id"
-      ? "Bahasa Indonesia. Gunakan kalimat Indonesia secara konsisten; istilah teknis umum boleh tetap dalam bahasa Inggris."
-      : "English. Keep every visible sentence in English.";
+      ? "Bahasa Indonesia. Gunakan kalimat Indonesia secara konsisten; istilah teknis umum boleh tetap dalam bahasa Inggris. Dilarang keras menggunakan bahasa Mandarin/China atau bahasa lain."
+      : "English. Keep every visible sentence in English. Strictly never use Chinese or other languages.";
   const allCollected = MUST_HAVE_KEYS.every((key) =>
     Boolean(currentMustHaves[key]?.trim())
   );

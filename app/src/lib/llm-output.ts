@@ -30,6 +30,8 @@ export function cleanModelOutput(text: string): string {
     )
     .trim();
 
+  cleaned = cleaned.replace(/(`{3,})(#{1,6}\s+)/g, "$1\n\n$2");
+
   const isReasoning = REASONING_PREFIXES.some((pattern) => pattern.test(cleaned));
   if (!isReasoning) {
     const headingMatch = cleaned.search(/^#{1,6}\s+\S/m);

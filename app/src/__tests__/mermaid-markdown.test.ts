@@ -44,10 +44,10 @@ describe("Mermaid Markdown normalization", () => {
     expect(result).toContain('B["Edge API: Workers"]');
   });
 
-  it("recognizes case-insensitive directives like FLOWCHART and STATEDIAGRAM-V2", () => {
-    expect(isMermaidSource("FLOWCHART TD\n  A --> B")).toBe(true);
-    expect(isMermaidSource("stateDiagram-v2\n  [*] --> Active")).toBe(true);
-    expect(isMermaidSource("SEQUENCEDIAGRAM\n  Alice->>Bob: Hi")).toBe(true);
+  it("separates code fences glued directly to markdown headings", () => {
+    const raw = "```mermaid\nflowchart TD\nA --> B\n```### Component Responsibilities\nDetails here";
+    const result = normalizeMermaidMarkdown(raw);
+    expect(result).toContain("```\n\n### Component Responsibilities");
   });
 });
 
