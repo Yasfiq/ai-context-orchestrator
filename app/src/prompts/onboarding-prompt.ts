@@ -69,7 +69,7 @@ CONFIRMED: ${confirmedSummary}${allCollected ? "\nALL COLLECTED — ask user to 
 PROVISIONAL: ${draftSummary || "None"}
 
 RULES
-- ONE question per reply, under 100 words.
+- Keep explanations complete, articulate, and structured (typically 2-3 focused paragraphs or bullet points). Never stop mid-thought or cut off explanations.
 - Vague answers ("todo app", "e-commerce") need follow-up: who uses it, what problem, what outcome.
 - For techStackCore: confirm platform first, then recommend ONE preset with ONE trade-off, wait for confirmation.
 - User unsure → recommend with rationale, ask to confirm.

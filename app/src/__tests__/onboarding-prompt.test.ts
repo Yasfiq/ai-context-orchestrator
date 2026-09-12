@@ -42,7 +42,7 @@ describe("buildOnboardingSystemPrompt", () => {
 
   it("enforces one primary decision and progressive disclosure", () => {
     const prompt = buildOnboardingSystemPrompt(EMPTY_STATE);
-    expect(prompt).toContain("ONE question per reply");
+    expect(prompt).toContain("Keep explanations complete, articulate, and structured");
     expect(prompt).toContain("confirm platform first, then recommend ONE preset");
   });
 

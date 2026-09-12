@@ -348,6 +348,164 @@ function cleanTextForFallback(text: string): string {
     .trim();
 }
 
+function unescapeJsonString(str: string): string {
+  return str
+    .replace(/\\n/g, "\n")
+    .replace(/\\r/g, "\r")
+    .replace(/\\t/g, "\t")
+    .replace(/\\"/g, '"')
+    .replace(/\\\\/g, "\\");
+}
+
+function extractUnclosedReply(text: string): string | null {
+  const replyKeyMatch = text.match(/"reply"\s*:\s*"/);
+  if (!replyKeyMatch || typeof replyKeyMatch.index !== "number") return null;
+
+  const contentStartIndex = replyKeyMatch.index + replyKeyMatch[0].length;
+  let raw = text.slice(contentStartIndex);
+
+  // Strip trailing markdown fences (e.g. ``` or ```json)
+  raw = raw.replace(/```(?:json)?\s*$/, "").trimEnd();
+
+  // Find closing unescaped quote if present
+  let inEscape = false;
+  let closingQuoteIndex = -1;
+
+  for (let i = 0; i < raw.length; i++) {
+    const char = raw[i];
+    if (inEscape) {
+      inEscape = false;
+      continue;
+    }
+    if (char === "\\") {
+      inEscape = true;
+      continue;
+    }
+    if (char === '"') {
+      closingQuoteIndex = i;
+      break;
+    }
+  }
+
+  let content = closingQuoteIndex !== -1 ? raw.slice(0, closingQuoteIndex) : raw;
+
+  // Auto-repair trailing backslash if cut off mid-escape
+  while (content.endsWith("\\") && !content.endsWith("\\\\")) {
+    content = content.slice(0, -1);
+  }
+
+  if (!content.trim()) return null;
+
+  try {
+    return JSON.parse(`"${content.replace(/\r?\n/g, "\\n")}"`);
+  } catch {
+    return unescapeJsonString(content);
+  }
+}
+
+function tryRepairTruncatedJson(text: string): Record<string, unknown> | null {
+  const firstBrace = text.indexOf("{");
+  if (firstBrace === -1) return null;
+  let candidate = text.slice(firstBrace).trim();
+  candidate = candidate.replace(/```(?:json)?\s*$/, "").trimEnd();
+
+  let inString = false;
+  let escaped = false;
+  const stack: string[] = [];
+
+  for (let i = 0; i < candidate.length; i++) {
+    const char = candidate[i];
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (char === "\\") {
+      escaped = true;
+      continue;
+    }
+    if (char === '"') {
+      inString = !inString;
+      continue;
+    }
+    if (!inString) {
+      if (char === "{" || char === "[") {
+        stack.push(char);
+      } else if (char === "}") {
+        if (stack.length && stack[stack.length - 1] === "{") stack.pop();
+      } else if (char === "]") {
+        if (stack.length && stack[stack.length - 1] === "[") stack.pop();
+      }
+    }
+  }
+
+  if (escaped) {
+    candidate = candidate.slice(0, -1);
+  }
+
+  if (inString) {
+    candidate += '"';
+  }
+
+  // Remove trailing incomplete key/value or trailing commas outside strings
+  let trimmed = candidate
+    .replace(/,\s*("[^"]*"\s*:\s*)?$/, "")
+    .replace(/,\s*"[^"]*"\s*$/, "")
+    .replace(/:\s*$/, "")
+    .trimEnd();
+
+  let scanInString = false;
+  let scanEscaped = false;
+  const remainingStack: string[] = [];
+
+  for (let i = 0; i < trimmed.length; i++) {
+    const char = trimmed[i];
+    if (scanEscaped) {
+      scanEscaped = false;
+      continue;
+    }
+    if (char === "\\") {
+      scanEscaped = true;
+      continue;
+    }
+    if (char === '"') {
+      scanInString = !scanInString;
+      continue;
+    }
+    if (!scanInString) {
+      if (char === "{" || char === "[") {
+        remainingStack.push(char);
+      } else if (char === "}") {
+        if (remainingStack.length && remainingStack[remainingStack.length - 1] === "{") {
+          remainingStack.pop();
+        }
+      } else if (char === "]") {
+        if (remainingStack.length && remainingStack[remainingStack.length - 1] === "[") {
+          remainingStack.pop();
+        }
+      }
+    }
+  }
+
+  if (scanInString) {
+    trimmed += '"';
+  }
+
+  let suffix = "";
+  while (remainingStack.length > 0) {
+    const top = remainingStack.pop();
+    suffix += top === "{" ? "}" : "]";
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed + suffix);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+  } catch {}
+
+  return null;
+}
+
 function extractJsonObject(text: string): Record<string, unknown> | null {
   const cleaned = text
     .replace(/<think>[\s\S]*?(?:<\/think>|$)/gi, "")
@@ -425,15 +583,22 @@ function extractJsonObject(text: string): Record<string, unknown> | null {
     } catch {}
   }
 
-  // 4. Fallback regex for "reply" in case of truncated or malformed JSON
-  const replyMatch = cleaned.match(/"reply"\s*:\s*"((?:[^"\\]|\\.)*)"/);
-  if (replyMatch) {
-    try {
-      const reply = JSON.parse(`"${replyMatch[1]}"`);
-      return { reply };
-    } catch {
-      return { reply: replyMatch[1] };
+  // 4. Try auto-repairing truncated JSON (closing unclosed string and braces)
+  const repaired = tryRepairTruncatedJson(cleaned);
+  if (repaired && repaired.reply && typeof repaired.reply === "string" && repaired.reply.trim()) {
+    return repaired;
+  }
+
+  // 5. Fallback regex / extractor for unclosed or truncated "reply"
+  const unclosedReply = extractUnclosedReply(cleaned);
+  if (unclosedReply) {
+    const res: Record<string, unknown> = repaired || {};
+    res.reply = unclosedReply;
+    const activeVarMatch = cleaned.match(/"activeVariable"\s*:\s*"([^"]+)"/);
+    if (activeVarMatch && !res.activeVariable) {
+      res.activeVariable = activeVarMatch[1];
     }
+    return res;
   }
 
   return null;
@@ -623,7 +788,7 @@ export function parseOnboardingResponse(
       !cleanedText.endsWith("}");
 
     const fallbackReply = looksLikePlainReply
-      ? cleanedText.slice(0, 1000).trim()
+      ? cleanedText.trim()
       : focusedQuestion(
           activeVariable,
           MATURITY_RUBRICS[activeVariable][0],

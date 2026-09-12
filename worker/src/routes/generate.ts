@@ -189,6 +189,49 @@ generateRoute.post("/single", async (c) => {
 
     const prompt = buildCopPrompt(documentName, mustHaves, previousDocuments);
 
+    const acceptHeader = c.req.header("accept") || "";
+    const wantsJson =
+      (acceptHeader.includes("application/json") &&
+        !acceptHeader.includes("text/event-stream")) ||
+      body.stream === false;
+
+    if (wantsJson) {
+      const result = streamText({
+        model: universalLLM(documentModelName),
+        prompt,
+        maxTokens: 4000,
+        temperature: 0.6,
+      });
+
+      let content = "";
+      for await (const textPart of result.textStream) {
+        content += textPart;
+      }
+
+      const finishReason = await result.finishReason;
+      const validated = validateModelDocument(content, finishReason);
+
+      logger.info("[/api/generate/single] completed", {
+        model: documentModelName,
+        documentName,
+        finishReason,
+        durationMs: Date.now() - startedAt,
+        outputChars: validated.content.length,
+      });
+
+      return c.json(
+        {
+          name: documentName,
+          content: validated.content,
+        },
+        200,
+        {
+          "Server-Timing": `dur=${Date.now() - startedAt}`,
+          "Cache-Control": "no-transform",
+        }
+      );
+    }
+
     const result = streamText({
       model: universalLLM(documentModelName),
       prompt,
@@ -196,33 +239,86 @@ generateRoute.post("/single", async (c) => {
       temperature: 0.6,
     });
 
-    let content = "";
-    for await (const textPart of result.textStream) {
-      content += textPart;
-    }
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        let stopped = c.req.raw.signal.aborted;
+        c.req.raw.signal.addEventListener("abort", () => {
+          stopped = true;
+        });
 
-    const finishReason = await result.finishReason;
-    const validated = validateModelDocument(content, finishReason);
+        const enqueue = (payload: string) => {
+          if (stopped) return false;
+          try {
+            controller.enqueue(encoder.encode(payload));
+            return true;
+          } catch {
+            stopped = true;
+            return false;
+          }
+        };
 
-    logger.info("[/api/generate/single] completed", {
-      model: documentModelName,
-      documentName,
-      finishReason,
-      durationMs: Date.now() - startedAt,
-      outputChars: validated.content.length,
+        try {
+          enqueue(
+            `data: ${JSON.stringify({ type: "start", name: documentName })}\n\n`
+          );
+
+          let content = "";
+          for await (const textPart of result.textStream) {
+            if (stopped) break;
+            content += textPart;
+            enqueue(
+              `data: ${JSON.stringify({ type: "chunk", text: textPart })}\n\n`
+            );
+          }
+
+          if (!stopped) {
+            const finishReason = await result.finishReason;
+            const validated = validateModelDocument(content, finishReason);
+
+            logger.info("[/api/generate/single] completed", {
+              model: documentModelName,
+              documentName,
+              finishReason,
+              durationMs: Date.now() - startedAt,
+              outputChars: validated.content.length,
+            });
+
+            enqueue(
+              `data: ${JSON.stringify({
+                type: "complete",
+                name: documentName,
+                content: validated.content,
+              })}\n\n`
+            );
+          }
+        } catch (streamError) {
+          logger.error("[/api/generate/single] stream failed", {
+            model: documentModelName,
+            documentName,
+            durationMs: Date.now() - startedAt,
+            ...errorFields(streamError),
+          });
+          enqueue(
+            `data: ${JSON.stringify({
+              type: "error",
+              error: "Dokumen belum dapat disusun. Silakan coba kembali.",
+            })}\n\n`
+          );
+        } finally {
+          try {
+            controller.close();
+          } catch {}
+        }
+      },
     });
 
-    return c.json(
-      {
-        name: documentName,
-        content: validated.content,
-      },
-      200,
-      {
-        "Server-Timing": `dur=${Date.now() - startedAt}`,
-        "Cache-Control": "no-transform",
-      }
-    );
+    return c.newResponse(stream, 200, {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache, no-transform",
+      "X-Accel-Buffering": "no",
+      Connection: "keep-alive",
+    });
   } catch (error) {
     logger.error("[/api/generate/single] failed", {
       model: documentModelName,

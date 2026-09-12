@@ -72,22 +72,142 @@ export function sanitizeMermaidSource(source: string): string {
     }
 
     // Sanitize node labels in flowchart/graph lines:
-    // e.g. Node[Next.js (App Router)] -> Node["Next.js (App Router)"]
-    // e.g. BE[@backend-data-engineer] -> BE["@backend-data-engineer"]
-    line = line.replace(/(\b[a-zA-Z0-9_-]+)\s*\[([^\]\n]+)\]/g, (match, nodeId, label) => {
-      const trimmedLabel = label.trim();
-      if (
-        (trimmedLabel.startsWith('"') && trimmedLabel.endsWith('"')) ||
-        (trimmedLabel.startsWith("'") && trimmedLabel.endsWith("'"))
-      ) {
+    // 1. Database / cylinder: [( ... )]
+    line = line.replace(
+      /(\b[a-zA-Z0-9_-]+)\s*\[\(([^\]\n]+?)\)\]/g,
+      (match, nodeId, label) => {
+        const trimmed = label.trim();
+        if (
+          (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+          (trimmed.startsWith("'") && trimmed.endsWith("'"))
+        ) {
+          return match;
+        }
+        const safeText = trimmed.replace(/"/g, "'");
+        return `${nodeId}[("${safeText}")]`;
+      }
+    );
+
+    // 2. Pill / rounded: ([ ... ])
+    line = line.replace(
+      /(\b[a-zA-Z0-9_-]+)\s*\(\[([^\]\n]+)\]\)/g,
+      (match, nodeId, label) => {
+        const trimmed = label.trim();
+        if (
+          (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+          (trimmed.startsWith("'") && trimmed.endsWith("'"))
+        ) {
+          return match;
+        }
+        const safeText = trimmed.replace(/"/g, "'");
+        return `${nodeId}(["${safeText}"])`;
+      }
+    );
+
+    // 3. Subroutine: [[ ... ]]
+    line = line.replace(
+      /(\b[a-zA-Z0-9_-]+)\s*\[\[([^\]\n]+)\]\]/g,
+      (match, nodeId, label) => {
+        const trimmed = label.trim();
+        if (
+          (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+          (trimmed.startsWith("'") && trimmed.endsWith("'"))
+        ) {
+          return match;
+        }
+        if (/[():{}[\]<>&/@#%*+=?|!;]/.test(trimmed)) {
+          const safeText = trimmed.replace(/"/g, "'");
+          return `${nodeId}[["${safeText}"]]`;
+        }
         return match;
       }
-      if (/[():{}[\]<>&/@#%*+=]/.test(trimmedLabel)) {
-        const safeText = trimmedLabel.replace(/"/g, "'");
-        return `${nodeId}["${safeText}"]`;
+    );
+
+    // 4. Hexagon: {{ ... }}
+    line = line.replace(
+      /(\b[a-zA-Z0-9_-]+)\s*\{\{([^{}\n]+)\}\}/g,
+      (match, nodeId, label) => {
+        const trimmed = label.trim();
+        if (
+          (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+          (trimmed.startsWith("'") && trimmed.endsWith("'"))
+        ) {
+          return match;
+        }
+        const safeText = trimmed.replace(/"/g, "'");
+        return `${nodeId}{{"${safeText}"}}`;
       }
-      return match;
-    });
+    );
+
+    // 5. Circle / lingkaran: (( ... ))
+    line = line.replace(
+      /(\b[a-zA-Z0-9_-]+)\s*\(\((.*?)\)\)(?!\))/g,
+      (match, nodeId, label) => {
+        const trimmed = label.trim();
+        if (
+          (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+          (trimmed.startsWith("'") && trimmed.endsWith("'"))
+        ) {
+          return match;
+        }
+        const safeText = trimmed.replace(/"/g, "'");
+        return `${nodeId}(("${safeText}"))`;
+      }
+    );
+
+    // 6. Asymmetric / flag: > ... ]
+    line = line.replace(
+      /(\b[a-zA-Z0-9_-]+)\s*>([^\]\n]+)\]/g,
+      (match, nodeId, label) => {
+        const trimmed = label.trim();
+        if (
+          (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+          (trimmed.startsWith("'") && trimmed.endsWith("'"))
+        ) {
+          return match;
+        }
+        const safeText = trimmed.replace(/"/g, "'");
+        return `${nodeId}>"${safeText}"]`;
+      }
+    );
+
+    // 7. Decision / belah ketupat: { ... }
+    line = line.replace(
+      /(\b[a-zA-Z0-9_-]+)\s*\{(?!\{)([^{}\n]+)\}(?!\})/g,
+      (match, nodeId, label) => {
+        const trimmed = label.trim();
+        if (
+          (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+          (trimmed.startsWith("'") && trimmed.endsWith("'"))
+        ) {
+          return match;
+        }
+        if (/[():{}[\]<>&/@#%*+=?|!;]/.test(trimmed)) {
+          const safeText = trimmed.replace(/"/g, "'");
+          return `${nodeId}{"${safeText}"}`;
+        }
+        return match;
+      }
+    );
+
+    // 8. Regular box / kotak biasa: [ ... ]
+    line = line.replace(
+      /(\b[a-zA-Z0-9_-]+)\s*\[(?!\(|\/|\[|\\)([^\]\n]+)\]/g,
+      (match, nodeId, label) => {
+        const trimmed = label.trim();
+        if (
+          (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+          (trimmed.startsWith("'") && trimmed.endsWith("'"))
+        ) {
+          return match;
+        }
+        if (/[():{}[\]<>&/@#%*+=?|!;]/.test(trimmed)) {
+          const safeText = trimmed.replace(/"/g, "'");
+          return `${nodeId}["${safeText}"]`;
+        }
+        return match;
+      }
+    );
 
     cleanedLines.push(line);
   }

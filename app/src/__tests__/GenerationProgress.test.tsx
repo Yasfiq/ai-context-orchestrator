@@ -143,4 +143,123 @@ describe("GenerationProgress", () => {
 
     vi.unstubAllGlobals();
   });
+
+  it("streams SSE chunks in real time, displays live preview, and completes document generation", async () => {
+    const encoder = new TextEncoder();
+    const fetchMock = vi.fn((_url: string, options?: RequestInit) => {
+      const payload = JSON.parse(String(options?.body));
+      const docName = payload.documentName;
+
+      const stream = new ReadableStream({
+        async start(controller) {
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ type: "start", name: docName })}\n\n`)
+          );
+          await new Promise((r) => setTimeout(r, 10));
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ type: "chunk", text: `Drafting ${docName} section 1. ` })}\n\n`)
+          );
+          await new Promise((r) => setTimeout(r, 10));
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ type: "chunk", text: `Drafting ${docName} section 2.` })}\n\n`)
+          );
+          await new Promise((r) => setTimeout(r, 10));
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({
+                type: "complete",
+                name: docName,
+                content: `## ${docName}\n\nCompleted stream content for ${docName}`,
+              })}\n\n`
+            )
+          );
+          controller.close();
+        },
+      });
+
+      return Promise.resolve(
+        new Response(stream, {
+          status: 200,
+          headers: {
+            "Content-Type": "text/event-stream",
+            "Cache-Control": "no-cache",
+          },
+        })
+      );
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<GenerationProgress />);
+
+    // Check that live streaming preview appears while generating
+    await waitFor(() => {
+      expect(screen.getByTestId("streaming-preview-container")).toBeInTheDocument();
+    });
+
+    // Wait until all 3 documents complete
+    await waitFor(
+      () => {
+        expect(useAppStore.getState().documents).toHaveLength(3);
+      },
+      { timeout: 5000 }
+    );
+
+    expect(
+      useAppStore.getState().documents.map((d) => d.content)
+    ).toEqual([
+      "## PRD\n\nCompleted stream content for PRD",
+      "## ARCHITECTURE\n\nCompleted stream content for ARCHITECTURE",
+      "## AGENTS\n\nCompleted stream content for AGENTS",
+    ]);
+
+    vi.unstubAllGlobals();
+  });
+
+  it("handles SSE error event gracefully and shows retry button", async () => {
+    const encoder = new TextEncoder();
+    const fetchMock = vi.fn((_url: string, options?: RequestInit) => {
+      const payload = JSON.parse(String(options?.body));
+      const docName = payload.documentName;
+
+      const stream = new ReadableStream({
+        start(controller) {
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ type: "start", name: docName })}\n\n`)
+          );
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ type: "error", error: "LLM streaming failed." })}\n\n`)
+          );
+          controller.close();
+        },
+      });
+
+      return Promise.resolve(
+        new Response(stream, {
+          status: 200,
+          headers: { "Content-Type": "text/event-stream" },
+        })
+      );
+    });
+
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(<GenerationProgress />);
+
+    await waitFor(
+      () => {
+        expect(screen.getByText("Penyusunan dokumen terhenti")).toBeInTheDocument();
+      },
+      { timeout: 4000 }
+    );
+
+    expect(
+      screen.getByText(/Dokumen belum dapat disusun/i)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Lanjutkan penyusunan dari Product Requirements Document/i)
+    ).toBeInTheDocument();
+
+    vi.unstubAllGlobals();
+  });
 });

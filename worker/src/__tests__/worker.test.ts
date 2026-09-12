@@ -223,6 +223,60 @@ describe("Cloudflare Worker Hono API - Security & Core Features", () => {
     expect(data.error).toContain("All 8 Must-Have variables");
   });
 
+  it("POST /api/generate/single should reject invalid document name with 400", async () => {
+    const res = await app.request(
+      "/api/generate/single",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          documentName: "INVALID_DOC",
+          mustHaves: {
+            projectVision: "Vision",
+            userRolesPermissions: "Roles",
+            keyFeatures: "Features",
+            techStackCore: "Stack",
+            dataFlowIntegration: "Data",
+            qaAndTesting: "QA",
+            securityCompliance: "Sec",
+            teamPersonas: "Team",
+          },
+        }),
+      },
+      mockEnv
+    );
+    expect(res.status).toBe(400);
+    const data = (await res.json()) as { error: string };
+    expect(data.error).toContain("Invalid document name");
+  });
+
+  it("POST /api/generate/single should reject incomplete mustHaves with 400", async () => {
+    const res = await app.request(
+      "/api/generate/single",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          documentName: "PRD",
+          mustHaves: {
+            projectVision: "Vision",
+            userRolesPermissions: null,
+            keyFeatures: null,
+            techStackCore: null,
+            dataFlowIntegration: null,
+            qaAndTesting: null,
+            securityCompliance: null,
+            teamPersonas: null,
+          },
+        }),
+      },
+      mockEnv
+    );
+    expect(res.status).toBe(400);
+    const data = (await res.json()) as { error: string };
+    expect(data.error).toContain("All 8 Must-Have variables");
+  });
+
   it("POST /api/tweak should reject empty userInstruction with 400", async () => {
     const res = await app.request(
       "/api/tweak",

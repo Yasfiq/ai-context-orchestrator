@@ -113,7 +113,7 @@ chatRoute.post("/", async (c) => {
       model: universalLLM(chatModelName),
       system: systemPrompt,
       messages: recentMessages,
-      maxTokens: 1600,
+      maxTokens: 3000,
       temperature: 0.25,
     });
 
@@ -124,7 +124,7 @@ chatRoute.post("/", async (c) => {
 
     const finishReason = await result.finishReason;
     const response =
-      responseText.trim() && finishReason !== "length"
+      responseText.trim()
         ? parseOnboardingResponse(
             responseText,
             activeVariable,

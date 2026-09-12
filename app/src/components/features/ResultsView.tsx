@@ -143,11 +143,15 @@ export function ResultsView() {
 
       const response = await fetch("/api/generate/single", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
         body: JSON.stringify({
           documentName: activeDocumentTab,
           mustHaves,
           previousDocuments,
+          stream: false,
         }),
         signal: controller.signal,
       });

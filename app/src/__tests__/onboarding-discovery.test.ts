@@ -357,5 +357,50 @@ I should confirm the project vision.
     expect(response.suggestedReplies).toHaveLength(2);
     expect(response.suggestedReplies.some((s) => s.recommended)).toBe(true);
   });
+
+  it("recovers unclosed reply string cut off mid-sentence without closing quote", () => {
+    const truncatedUnclosedJSON = `{"reply": "Di sini kami merekomendasikan arsitektur edge serverless menggunakan Cloudflare Workers dan Next.js App Router agar latensi tetap ultra rendah dan biaya operasional`;
+    const response = parseOnboardingResponse(
+      truncatedUnclosedJSON,
+      "techStackCore",
+      "id",
+      "Stack apa yang cocok?"
+    );
+
+    expect(response.reply).toBe(
+      "Di sini kami merekomendasikan arsitektur edge serverless menggunakan Cloudflare Workers dan Next.js App Router agar latensi tetap ultra rendah dan biaya operasional"
+    );
+    expect(response.suggestedReplies.length).toBeGreaterThanOrEqual(1);
+    expect(response.suggestedReplies.some((s) => s.recommended)).toBe(true);
+  });
+
+  it("recovers truncated JSON with literal newlines inside unclosed reply", () => {
+    const multilineUnclosedJSON = `{"reply": "Berikut adalah ringkasan rekomendasi:\n\n1. Next.js untuk frontend\n2. Cloudflare Workers untuk backend API yang`;
+    const response = parseOnboardingResponse(
+      multilineUnclosedJSON,
+      "techStackCore",
+      "id",
+      "Stack apa yang cocok?"
+    );
+
+    expect(response.reply).toContain("Berikut adalah ringkasan rekomendasi:");
+    expect(response.reply).toContain("1. Next.js untuk frontend");
+    expect(response.reply).toContain("2. Cloudflare Workers untuk backend API yang");
+  });
+
+  it("preserves full fallback plain text beyond 1000 characters without truncation", () => {
+    const longText = "Penjelasan mendalam tentang sistem dan arsitektur proyek ini. ".repeat(30);
+    expect(longText.length).toBeGreaterThan(1500);
+
+    const response = parseOnboardingResponse(
+      longText,
+      "projectVision",
+      "id",
+      "Jelaskan visinya secara lengkap"
+    );
+
+    expect(response.reply.length).toBe(longText.trim().length);
+    expect(response.reply).toBe(longText.trim());
+  });
 });
 

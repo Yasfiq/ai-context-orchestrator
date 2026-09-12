@@ -43,6 +43,21 @@ export function GenerationProgress() {
   const [activeDocElapsed, setActiveDocElapsed] = React.useState(0);
   const [totalElapsed, setTotalElapsed] = React.useState(0);
   const [failedDoc, setFailedDoc] = React.useState<DocumentName | null>(null);
+  const [streamingContent, setStreamingContent] = React.useState("");
+  const streamBoxRef = React.useRef<HTMLDivElement>(null);
+
+  const streamingWords = React.useMemo(() => {
+    if (!streamingContent.trim()) return 0;
+    return streamingContent.trim().split(/\s+/).length;
+  }, [streamingContent]);
+
+  const streamingChars = streamingContent.length;
+
+  React.useEffect(() => {
+    if (streamBoxRef.current) {
+      streamBoxRef.current.scrollTop = streamBoxRef.current.scrollHeight;
+    }
+  }, [streamingContent]);
 
   const startedRef = React.useRef(false);
   const furthestProgressIndexRef = React.useRef(-1);
@@ -137,13 +152,14 @@ export function GenerationProgress() {
         setDocumentProgress(docName, "generating", runId);
         activeDocStartTimeRef.current = Date.now();
         setActiveDocElapsed(0);
+        setStreamingContent("");
 
         const previousDocuments = Object.fromEntries(
           generatedDocs.map((doc) => [doc.name, doc.content])
         );
 
         // Resilient fetch with 1 automatic retry on transient error
-        let data: { content?: string; error?: string } | null = null;
+        let finalContent: string | null = null;
         const maxAttempts = 2;
 
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -152,9 +168,13 @@ export function GenerationProgress() {
           const timeoutId = window.setTimeout(() => controller.abort(), 140_000);
 
           try {
+            setStreamingContent("");
             const response = await fetch("/api/generate/single", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "text/event-stream, application/json",
+              },
               body: JSON.stringify({
                 documentName: docName,
                 mustHaves,
@@ -163,15 +183,110 @@ export function GenerationProgress() {
               signal: controller.signal,
             });
 
-            data = (await response.json().catch(() => null)) as {
-              content?: string;
-              error?: string;
-            } | null;
-
-            if (!response.ok || !data?.content?.trim()) {
+            if (!response.ok) {
+              const errBody = (await response.json().catch(() => null)) as {
+                error?: string;
+              } | null;
               throw new Error(
-                data?.error || `${DOCUMENT_LABELS[docName]} belum dapat disusun.`
+                errBody?.error || `${DOCUMENT_LABELS[docName]} belum dapat disusun.`
               );
+            }
+
+            const contentType = response.headers.get("content-type") || "";
+
+            if (contentType.includes("text/event-stream") && response.body) {
+              const reader = response.body.getReader();
+              const decoder = new TextDecoder();
+              let buffer = "";
+              let accumulatedChunks = "";
+              let serverCompletedContent = "";
+
+              while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                buffer += decoder.decode(value, { stream: true });
+
+                const lines = buffer.split("\n");
+                buffer = lines.pop() ?? "";
+
+                for (const line of lines) {
+                  const trimmed = line.trim();
+                  if (!trimmed || !trimmed.startsWith("data:")) continue;
+                  const jsonStr = trimmed.slice(5).trim();
+                  if (!jsonStr || jsonStr === "[DONE]") continue;
+
+                  const event = JSON.parse(jsonStr) as {
+                    type: "start" | "chunk" | "complete" | "error";
+                    text?: string;
+                    content?: string;
+                    name?: string;
+                    error?: string;
+                  };
+
+                  if (event.type === "chunk" && typeof event.text === "string") {
+                    accumulatedChunks += event.text;
+                    setStreamingContent(accumulatedChunks);
+                  } else if (
+                    event.type === "complete" &&
+                    typeof event.content === "string"
+                  ) {
+                    serverCompletedContent = event.content;
+                    setStreamingContent(event.content);
+                  } else if (event.type === "error") {
+                    throw new Error(
+                      event.error || `${DOCUMENT_LABELS[docName]} belum dapat disusun.`
+                    );
+                  }
+                }
+              }
+
+              if (buffer.trim().startsWith("data:")) {
+                const jsonStr = buffer.trim().slice(5).trim();
+                if (jsonStr && jsonStr !== "[DONE]") {
+                  const event = JSON.parse(jsonStr) as {
+                    type: "start" | "chunk" | "complete" | "error";
+                    text?: string;
+                    content?: string;
+                    name?: string;
+                    error?: string;
+                  };
+
+                  if (event.type === "chunk" && typeof event.text === "string") {
+                    accumulatedChunks += event.text;
+                    setStreamingContent(accumulatedChunks);
+                  } else if (
+                    event.type === "complete" &&
+                    typeof event.content === "string"
+                  ) {
+                    serverCompletedContent = event.content;
+                    setStreamingContent(event.content);
+                  } else if (event.type === "error") {
+                    throw new Error(
+                      event.error || `${DOCUMENT_LABELS[docName]} belum dapat disusun.`
+                    );
+                  }
+                }
+              }
+
+              finalContent = serverCompletedContent || accumulatedChunks;
+            } else {
+              // Backward-compatibility: JSON response
+              const data = (await response.json().catch(() => null)) as {
+                content?: string;
+                error?: string;
+              } | null;
+
+              if (!data?.content?.trim()) {
+                throw new Error(
+                  data?.error || `${DOCUMENT_LABELS[docName]} belum dapat disusun.`
+                );
+              }
+              finalContent = data.content;
+              setStreamingContent(finalContent);
+            }
+
+            if (!finalContent || !finalContent.trim()) {
+              throw new Error(`${DOCUMENT_LABELS[docName]} belum dapat disusun.`);
             }
             break;
           } catch (attemptErr) {
@@ -202,7 +317,7 @@ export function GenerationProgress() {
         const generatedDocument = {
           name: docName,
           filename: DOCUMENT_FILENAMES[docName],
-          content: data!.content!,
+          content: finalContent!,
           generatedAt: Date.now(),
         } satisfies GeneratedDocument;
 
@@ -222,6 +337,7 @@ export function GenerationProgress() {
         // Persist every completed step so a retry resumes from the failed document.
         setDocuments(orderedDocs);
         setDocumentProgress(docName, "completed", runId);
+        setStreamingContent("");
       }
 
       if (generatedDocs.length !== totalDocs) {
@@ -236,6 +352,7 @@ export function GenerationProgress() {
         setTotalElapsed(finalTotal);
       }
 
+      setStreamingContent("");
       setGenerationStatus("completed");
       setCurrentGeneratingDoc(null);
 
@@ -245,6 +362,7 @@ export function GenerationProgress() {
         }
       }, 800);
     } catch (err) {
+      setStreamingContent("");
       const activeDoc = useAppStore.getState().currentGeneratingDoc;
       if (activeDoc) {
         setDocumentProgress(activeDoc, "error", runId);
@@ -259,7 +377,9 @@ export function GenerationProgress() {
   const statusText = isComplete
     ? `${UI_COPY.generation.complete}${totalElapsed > 0 ? ` (${totalElapsed}s)` : ""}`
     : currentGeneratingDoc
-      ? `Menyusun ${DOCUMENT_LABELS[currentGeneratingDoc]}... (${activeDocElapsed}s)`
+      ? `Menyusun ${DOCUMENT_LABELS[currentGeneratingDoc]}... (${activeDocElapsed}s${
+          streamingWords > 0 ? ` • ${streamingWords} kata` : ""
+        })`
       : UI_COPY.generation.preparing;
 
   return (
@@ -341,6 +461,11 @@ export function GenerationProgress() {
                   </p>
                   <p className="text-[10px] text-muted-foreground font-mono">
                     {DOCUMENT_FILENAMES[docName]}
+                    {isCurrent && streamingChars > 0 && (
+                      <span className="ml-2 text-primary font-mono font-normal">
+                        &bull; {streamingWords} kata ({streamingChars} karakter)
+                      </span>
+                    )}
                   </p>
                 </div>
                 <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -370,6 +495,41 @@ export function GenerationProgress() {
             );
           })}
         </ol>
+
+        {/* Real-time Streaming Preview Panel */}
+        {currentGeneratingDoc && streamingContent && (
+          <section
+            aria-label="Live document streaming preview"
+            data-testid="streaming-preview-container"
+            className="mt-6 rounded-lg border border-border/80 bg-card/60 p-4 font-mono text-xs backdrop-blur-sm shadow-sm"
+          >
+            <div className="flex items-center justify-between border-b border-border/60 pb-2 mb-3">
+              <div className="flex items-center gap-2 text-foreground font-medium">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span className="text-xs">
+                  Streaming {DOCUMENT_FILENAMES[currentGeneratingDoc]}
+                </span>
+              </div>
+              <div className="text-[11px] text-muted-foreground font-mono">
+                {streamingWords} kata &bull; {streamingChars} karakter
+              </div>
+            </div>
+            <div
+              ref={streamBoxRef}
+              data-testid="streaming-preview-box"
+              className="max-h-48 overflow-y-auto whitespace-pre-wrap text-muted-foreground/90 font-mono text-xs leading-relaxed selection:bg-primary/20 scroll-smooth rounded bg-background/50 p-3 border border-border/40"
+            >
+              {streamingContent}
+              <span
+                className="inline-block w-1.5 h-3.5 ml-0.5 bg-primary align-middle animate-pulse"
+                aria-hidden="true"
+              />
+            </div>
+          </section>
+        )}
 
         {error && (
           <div className="mt-8 border-l-2 border-destructive bg-destructive/[0.07] p-5 text-sm text-foreground" role="alert">
