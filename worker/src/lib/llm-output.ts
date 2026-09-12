@@ -30,6 +30,14 @@ export function cleanModelOutput(text: string): string {
     )
     .trim();
 
+  const isReasoning = REASONING_PREFIXES.some((pattern) => pattern.test(cleaned));
+  if (!isReasoning) {
+    const headingMatch = cleaned.search(/^#{1,6}\s+\S/m);
+    if (headingMatch > 0) {
+      cleaned = cleaned.slice(headingMatch).trim();
+    }
+  }
+
   cleaned = cleanAntiSlop(cleaned);
 
   return cleaned;
