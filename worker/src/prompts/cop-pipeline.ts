@@ -107,13 +107,13 @@ Generate an in-depth, production-ready PRD with the following sections:
 
 1. **Product Vision & Problem Statement** — What specific problem does this product solve? Why does it matter? Include core quantifiable value drivers.
 2. **Target Users & Permissions Matrix** —
-   - Define 3-4 concrete user personas (Role, core workflows, technical background, pain points).
+   - Define 2-3 concrete user personas (Role, core workflows, technical background, pain points).
    - Provide a User Permissions & Access Control Matrix table detailing permissions per persona.
-3. **Core Features (MVP Scope)** — Detail 3-5 core MVP features. For each feature, provide:
-   - Feature name and detailed functional description
-   - User story in standard format: As a [user persona], I want [capability], so that [business value]
-   - 6-8 granular Acceptance Criteria covering normal flows, edge cases, data validation, and error states
-   - Include at least one Mermaid diagram (\`\`\`mermaid flowchart TD or sequenceDiagram) illustrating the core user journey or interaction model.
+3. **Core Features (MVP Scope)** — Detail exactly 3 core MVP features (strict limit of 3 features to maintain sharp MVP focus). For each feature, provide:
+   - Feature name and functional description
+   - User story: As a [user persona], I want [capability], so that [business value]
+   - 4-5 granular Acceptance Criteria covering normal flows, data validation, and error states
+   - Include a Mermaid diagram (\`\`\`mermaid flowchart TD or sequenceDiagram) illustrating the core user journey or interaction model.
 4. **Non-Functional Requirements** — Concrete latency targets, throughput, security baselines, and data durability expectations.
 5. **Tech Stack & Architectural Alignment** — High-level technology decisions and rationale connecting directly to the confirmed project context.
 6. **Out of Scope (MVP)** — Explicit list of capabilities postponed to later releases to preserve MVP focus.
@@ -143,11 +143,11 @@ Ensure the architecture aligns with the tech stack and features described in the
     requirements: `
 Generate an exhaustive, production-grade AGENTS.md file defining AI agent personas and orchestration workflows for this project:
 
-1. **AI Agent Personas** — Define 4-6 distinct specialized agents (covering Frontend/UI, Backend/API, Architecture/Data, QA Automation, and relevant Domain Specialists). For each agent, provide:
+1. **AI Agent Personas** — Define 3-4 specialized agents (covering Frontend, Backend/Data, QA Automation, and relevant Domain Specialist). For each agent, provide:
    - **Agent Tag & Role:** Unique tag (e.g., @frontend-specialist, @backend-engineer) and specific domain focus.
    - **Technology Mastery:** Specific frameworks, libraries, and tools this agent specializes in.
-   - **Detailed Technical Responsibilities:** 6-8 bullet points detailing concrete tasks and boundaries.
-   - **Strict Rules & Constraints:** 3-5 hard constraints and anti-patterns the agent must never violate.
+   - **Detailed Technical Responsibilities:** 4-5 bullet points detailing concrete tasks and boundaries.
+   - **Strict Rules & Constraints:** 2-3 hard constraints and anti-patterns the agent must never violate.
    - **Standard Interaction & Response Format:** Guidelines on code generation, test output, and explanations.
 
 2. **Agent Collaboration & Orchestration Protocol** —

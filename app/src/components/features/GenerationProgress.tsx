@@ -149,7 +149,7 @@ export function GenerationProgress() {
         for (let attempt = 1; attempt <= maxAttempts; attempt++) {
           const controller = new AbortController();
           activeControllerRef.current = controller;
-          const timeoutId = window.setTimeout(() => controller.abort(), 115_000);
+          const timeoutId = window.setTimeout(() => controller.abort(), 140_000);
 
           try {
             const response = await fetch("/api/generate/single", {

@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: true,
   experimental: {
-    proxyTimeout: 120_000,
+    proxyTimeout: 150_000,
   },
   async headers() {
     return [
