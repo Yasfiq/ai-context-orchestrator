@@ -73,6 +73,7 @@ export function sanitizeMermaidSource(source: string): string {
 
     // Sanitize node labels in flowchart/graph lines:
     // e.g. Node[Next.js (App Router)] -> Node["Next.js (App Router)"]
+    // e.g. BE[@backend-data-engineer] -> BE["@backend-data-engineer"]
     line = line.replace(/(\b[a-zA-Z0-9_-]+)\s*\[([^\]\n]+)\]/g, (match, nodeId, label) => {
       const trimmedLabel = label.trim();
       if (
@@ -81,7 +82,7 @@ export function sanitizeMermaidSource(source: string): string {
       ) {
         return match;
       }
-      if (/[():{}[\]<>&/]/.test(trimmedLabel)) {
+      if (/[():{}[\]<>&/@#%*+=]/.test(trimmedLabel)) {
         const safeText = trimmedLabel.replace(/"/g, "'");
         return `${nodeId}["${safeText}"]`;
       }
