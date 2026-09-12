@@ -31,6 +31,7 @@ export function cleanModelOutput(text: string): string {
     .trim();
 
   cleaned = cleaned.replace(/(`{3,})(#{1,6}\s+)/g, "$1\n\n$2");
+  cleaned = cleaned.replace(/(`{3,})(---+)\s*$/gm, "$1\n\n$2");
 
   const isReasoning = REASONING_PREFIXES.some((pattern) => pattern.test(cleaned));
   if (!isReasoning) {

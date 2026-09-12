@@ -457,24 +457,95 @@ function cleanSuggestions(value: unknown): SuggestedReply[] {
   if (!Array.isArray(value)) return [];
   return value
     .flatMap((item) => {
-      if (!item || typeof item !== "object") return [];
-      const raw = item as Record<string, unknown>;
-      if (typeof raw.label !== "string" || typeof raw.value !== "string") {
-        return [];
+      if (!item) return [];
+
+      // Tolerate LLM returning an array of strings
+      if (typeof item === "string") {
+        const str = item.trim();
+        if (!str) return [];
+        const splitIdx = str.indexOf(": ");
+        const label = splitIdx !== -1 ? str.slice(0, splitIdx).trim() : str.slice(0, 40).trim();
+        return [
+          {
+            label: label.slice(0, 80),
+            value: str.slice(0, 500),
+            recommended: false,
+          },
+        ];
       }
+
+      if (typeof item !== "object") return [];
+      const raw = item as Record<string, unknown>;
+
+      // Tolerate alternate field names from LLM
+      const label =
+        (typeof raw.label === "string" && raw.label) ||
+        (typeof raw.title === "string" && raw.title) ||
+        (typeof raw.name === "string" && raw.name) ||
+        (typeof raw.option === "string" && raw.option) ||
+        "";
+
+      const val =
+        (typeof raw.value === "string" && raw.value) ||
+        (typeof raw.description === "string" && raw.description) ||
+        (typeof raw.text === "string" && raw.text) ||
+        label;
+
+      if (!label.trim()) return [];
+
       return [
         {
-          label: raw.label.slice(0, 80),
-          value: raw.value.slice(0, 500),
+          label: label.trim().slice(0, 80),
+          value: val.trim().slice(0, 500),
           recommended: raw.recommended === true,
         },
       ];
     })
-    .slice(0, 3);
+    .slice(0, 4);
 }
 
 const PROJECT_CONTEXT_MARKERS =
   /\b(personal|pribadi|harian|daily|kuliah|mahasiswa|student|sekolah|belajar|kantor|pekerjaan|kerja|team|tim|kolaborasi|kanban|proyek|project|keluarga|usaha|bisnis|umkm)\b/i;
+
+/**
+ * Extracts numbered/bulleted options from the AI reply text so contextual
+ * choices can be surfaced as clickable suggestion chips when the LLM
+ * puts options inline in the reply instead of in suggestedReplies.
+ */
+function extractSuggestionsFromReply(replyText: string): SuggestedReply[] {
+  if (!replyText || replyText.length < 15) return [];
+
+  // Match numbered (1., 2.), lettered (A., B.), or bulleted (-, *) lines
+  const optionRegex = /^\s*(?:(?:(?:\d+|[a-zA-Z])[.)])|(?:[-*•]))\s+(.+)$/gm;
+  const matches: string[] = [];
+  let match;
+  while ((match = optionRegex.exec(replyText)) !== null) {
+    const line = match[1].trim();
+    if (line.length > 3) {
+      matches.push(line);
+    }
+  }
+
+  if (matches.length < 2) return [];
+
+  return matches.slice(0, 4).map((item, index) => {
+    // Try to split at colon or dash for label vs value
+    const colonIdx = item.indexOf(": ");
+    const dashIdx = item.indexOf(" — ");
+    const splitIdx = colonIdx !== -1 ? colonIdx : dashIdx !== -1 ? dashIdx : -1;
+
+    let label = splitIdx !== -1 ? item.slice(0, splitIdx).trim() : item.slice(0, 60).trim();
+    // Strip bold markdown
+    label = label.replace(/\*\*/g, "");
+
+    return {
+      label: label.slice(0, 80),
+      value: item.replace(/\*\*/g, "").slice(0, 500),
+      recommended: index === 0,
+    };
+  });
+}
+
 const PROJECT_PROBLEM_MARKERS =
   /\b(sulit|kesulitan|bingung|lupa|terlambat|tercecer|tidak teratur|overwhelmed|miss|track|mengelola|memantau|prioritas|deadline|koordinasi|supaya|agar|sehingga|membantu)\b/i;
 const GENERIC_PRODUCT_MARKERS =
@@ -573,7 +644,10 @@ export function parseOnboardingResponse(
         lastUserMessage.trim().length > 10
           ? { [activeVariable]: lastUserMessage.trim() }
           : {},
-      suggestedReplies: getDefaultSuggestions(activeVariable, language),
+      suggestedReplies: (() => {
+        const extracted = extractSuggestionsFromReply(fallbackReply);
+        return extracted.length >= 2 ? extracted : getDefaultSuggestions(activeVariable, language);
+      })(),
       sessionLanguage: language,
       turnOutcome: "ambiguous",
     };
@@ -618,7 +692,9 @@ export function parseOnboardingResponse(
     missingDimensions,
     confirmedUpdates: cleanUpdates(parsed.confirmedUpdates),
     provisionalUpdates: cleanUpdates(parsed.provisionalUpdates),
-    suggestedReplies: cleanSuggestions(parsed.suggestedReplies),
+    suggestedReplies: cleanSuggestions(
+      parsed.suggestedReplies || parsed.suggestions || parsed.options || parsed.choices
+    ),
     sessionLanguage: language,
     turnOutcome,
   };
@@ -720,10 +796,11 @@ export function parseOnboardingResponse(
 
   // Ensure suggestion chips are always available with at least one recommended option
   if (response.suggestedReplies.length === 0) {
-    response.suggestedReplies = getDefaultSuggestions(
-      response.activeVariable,
-      language
-    );
+    const extracted = extractSuggestionsFromReply(response.reply);
+    response.suggestedReplies =
+      extracted.length >= 2
+        ? extracted
+        : getDefaultSuggestions(response.activeVariable, language);
   } else if (!response.suggestedReplies.some((suggestion) => suggestion.recommended)) {
     response.suggestedReplies[0].recommended = true;
   }

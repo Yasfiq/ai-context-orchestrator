@@ -98,7 +98,16 @@ export function sanitizeMermaidSource(source: string): string {
  * Repairs common LLM fence mistakes without guessing that arbitrary code is Mermaid.
  */
 export function normalizeMermaidMarkdown(markdown: string): string {
-  const separated = markdown.replace(/(`{3,})(#{1,6}\s+)/g, "$1\n\n$2");
+  // 1. Separate closing fence glued to headings: ```### Heading -> ```\n\n### Heading
+  let separated = markdown.replace(/(`{3,})(#{1,6}\s+)/g, "$1\n\n$2");
+  // 2. Separate closing fence glued to hr/thematic break: ```--- -> ```\n\n---
+  separated = separated.replace(/(`{3,})(---+)\s*$/gm, "$1\n\n$2");
+  // 3. Separate closing fence glued to any non-backtick text: ```**Bold -> ```\n\n**Bold
+  separated = separated.replace(/(`{3,})([^\s`\n][^\n]*)$/gm, (match, fence, rest) => {
+    // Don't touch opening fences (language tag like ```mermaid, ```json etc.)
+    if (/^[a-zA-Z]/.test(rest)) return match;
+    return `${fence}\n\n${rest}`;
+  });
   return separated.replace(
     /(^|\n)(`{3,})([^\n`]*)\r?\n([\s\S]*?)\n?\2(?=\n|$)/g,
     (match, prefix: string, fence: string, rawInfo: string, rawBody: string) => {

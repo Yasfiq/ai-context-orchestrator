@@ -21,10 +21,12 @@ const BASE_INSTRUCTION = `
 ${ANTI_SLOP_DIRECTIVES}
 
 - Write in clean, professional Markdown.
-- Be comprehensive but concise — no filler content.
+- Be comprehensive, concrete, and deeply actionable — avoid superficial summaries.
 - Use proper Markdown headings (##, ###), bullet points, and code blocks where appropriate.
 - Every diagram MUST use a fenced Mermaid block with the exact language tag \`\`\`mermaid. The first line inside the fence must be a valid Mermaid directive such as \`flowchart TD\`, \`sequenceDiagram\`, \`graph LR\`, or \`gitGraph\`.
+- Always ensure closing code fences (\`\`\`) are placed on their own isolated line, preceded and followed by a blank line. Never attach markdown formatting (such as ---, **, or ##) directly to closing backticks.
 - Never place a Mermaid directive in the code-fence language tag (for example, never write \`\`\`flowchart TD).
+- Never output unexecutable placeholder code blocks like \`\`\`mermaid [Valid directive] \`\`\` — either provide valid, executable syntax or use formatted text tables.
 - Bilingual: Write primarily in English but include Indonesian terms/notes where contextually appropriate.
 - Do NOT include the document title as H1 — the system will handle that.
 - Do NOT include any metadata, timestamps, or version numbers.
@@ -99,30 +101,33 @@ interface DocumentSpec {
 
 const DOCUMENT_SPECS: Record<DocumentName, DocumentSpec> = {
   PRD: {
-    role: "You are a senior product manager creating a Product Requirements Document (PRD).",
+    role: "You are a senior product manager creating an exhaustive Product Requirements Document (PRD).",
     requirements: `
-Generate a comprehensive PRD with the following sections:
+Generate an in-depth, production-ready PRD with the following sections:
 
-1. **Product Vision & Problem Statement** — What problem does this product solve? Why does it matter?
-2. **Target Users** — Who are the primary users? Include user personas if relevant.
-3. **Core Features (MVP Scope)** — List 3-5 core features with detailed descriptions. For each feature, include:
-   - Feature name and description
-   - User story (As a [user], I want to [action], so that [benefit])
-   - Acceptance criteria
-4. **Non-Functional Requirements** — Performance, security, scalability expectations.
-5. **Tech Stack Overview** — High-level technology decisions and rationale.
-6. **Out of Scope (MVP)** — What is explicitly NOT included in this phase.
-7. **Success Metrics** — How will we measure if this product is successful?
-8. **Risks & Mitigation** — Key risks and how to address them.
+1. **Product Vision & Problem Statement** — What specific problem does this product solve? Why does it matter? Include core quantifiable value drivers.
+2. **Target Users & Permissions Matrix** —
+   - Define 3-4 concrete user personas (Role, core workflows, technical background, pain points).
+   - Provide a User Permissions & Access Control Matrix table detailing permissions per persona.
+3. **Core Features (MVP Scope)** — Detail 3-5 core MVP features. For each feature, provide:
+   - Feature name and detailed functional description
+   - User story in standard format: As a [user persona], I want [capability], so that [business value]
+   - 6-8 granular Acceptance Criteria covering normal flows, edge cases, data validation, and error states
+   - Include at least one Mermaid diagram (\`\`\`mermaid flowchart TD or sequenceDiagram) illustrating the core user journey or interaction model.
+4. **Non-Functional Requirements** — Concrete latency targets, throughput, security baselines, and data durability expectations.
+5. **Tech Stack & Architectural Alignment** — High-level technology decisions and rationale connecting directly to the confirmed project context.
+6. **Out of Scope (MVP)** — Explicit list of capabilities postponed to later releases to preserve MVP focus.
+7. **Success Metrics & KPIs** — Measurable leading and lagging indicators for MVP validation.
+8. **Risks, Edge Cases & Mitigation** — Technical, operational, and regulatory risks with concrete mitigation playbooks.
 
-Make it detailed enough that a development team can start building from this document.`,
+Ensure this document is rigorous, comprehensive, and immediately actionable for engineering teams.`,
   },
   ARCHITECTURE: {
     role: "You are a senior software architect designing the system architecture.",
     requirements: `
 Generate an Architecture document with the following sections:
 
-1. **Technology Stack** — List every major technology/library/framework with rationale for each choice.
+1. **Technology Stack** — List every major technology/library/framework with rationale for each choice in a structured markdown table.
 2. **High-Level System Architecture** — Describe the system components and how they interact. Include a Mermaid diagram using the required \`\`\`mermaid fence if applicable.
 3. **Directory & File Structure** — Provide a detailed folder structure using a code block tree format. Explain the purpose of each major directory.
 4. **Data Flow** — How data moves through the system (user input → processing → output).
@@ -134,25 +139,31 @@ Generate an Architecture document with the following sections:
 Ensure the architecture aligns with the tech stack and features described in the PRD.`,
   },
   AGENTS: {
-    role: "You are an expert in AI-assisted development workflows, creating an AGENTS.md file.",
+    role: "You are an expert in AI-assisted development workflows, creating an exhaustive AGENTS.md file.",
     requirements: `
-Generate an AGENTS.md file that defines AI agent personas for this project. For each agent:
+Generate an exhaustive, production-grade AGENTS.md file defining AI agent personas and orchestration workflows for this project:
 
-1. **Agent Tag** — A unique identifier (e.g., @frontend-specialist, @backend-engineer)
-2. **Role** — A one-line description of the agent's expertise and focus area.
-3. **Technology Focus** — Specific technologies this agent specializes in.
-4. **Responsibilities** — 3-5 bullet points of what this agent handles.
-5. **Strict Rules** — 2-3 hard constraints the agent must follow.
-6. **Response Format** — How the agent should format its responses.
+1. **AI Agent Personas** — Define 4-6 distinct specialized agents (covering Frontend/UI, Backend/API, Architecture/Data, QA Automation, and relevant Domain Specialists). For each agent, provide:
+   - **Agent Tag & Role:** Unique tag (e.g., @frontend-specialist, @backend-engineer) and specific domain focus.
+   - **Technology Mastery:** Specific frameworks, libraries, and tools this agent specializes in.
+   - **Detailed Technical Responsibilities:** 6-8 bullet points detailing concrete tasks and boundaries.
+   - **Strict Rules & Constraints:** 3-5 hard constraints and anti-patterns the agent must never violate.
+   - **Standard Interaction & Response Format:** Guidelines on code generation, test output, and explanations.
 
-Create agents that cover:
-- Frontend/UI development
-- Backend/API development
-- Architecture & system design
-- Quality assurance & testing
-- Any domain-specific agents relevant to the project
+2. **Agent Collaboration & Orchestration Protocol** —
+   - Include a Mermaid flowchart (\`\`\`mermaid flowchart TD) visualizing how agents hand off tasks.
+   - Coordination rules for feature implementation, code reviews, and schema migrations.
 
-Each agent should be distinct with clear boundaries. Avoid overlap in responsibilities.`,
+3. **Task Handoff Matrix** —
+   - A structured markdown table detailing: Trigger / Request, Sending Agent, Receiving Agent, Required Input Artifacts, Expected Output Artifacts.
+
+4. **Operational Workflows & Runbooks** —
+   - Step-by-step multi-agent execution sequences for: (a) New feature end-to-end implementation, (b) Bug triage and resolution, (c) Schema/API version migration.
+
+5. **Quality Gates & Pre-Commit Checklist** —
+   - Concrete checklist that QA and Lead agents must verify before approving changes.
+
+Make each persona distinct, actionable, and free from superficial brevity.`,
   },
 };
 

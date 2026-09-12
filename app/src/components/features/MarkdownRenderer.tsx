@@ -4,7 +4,7 @@ import * as React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
-import { normalizeMermaidMarkdown } from "@/lib/mermaid-markdown";
+import { isMermaidSource, normalizeMermaidMarkdown } from "@/lib/mermaid-markdown";
 import { MermaidDiagram } from "./MermaidDiagram";
 import { Check, Copy } from "lucide-react";
 
@@ -35,7 +35,10 @@ function CodeBlock({
   if (React.isValidElement<{ className?: string; children?: React.ReactNode }>(child)) {
     language = /language-([^\s]+)/.exec(child.props.className || "")?.[1] || "";
     if (language === "mermaid") {
-      return <MermaidDiagram source={extractTextContent(child.props.children).trim()} />;
+      const source = extractTextContent(child.props.children).trim();
+      if (isMermaidSource(source)) {
+        return <MermaidDiagram source={source} />;
+      }
     }
     rawCode = extractTextContent(child.props.children);
   } else {
